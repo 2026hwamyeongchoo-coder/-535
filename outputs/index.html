@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cargo Master 3D</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;overflow:hidden;background:#021525;color:#f7fcff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}.hero{position:fixed;inset:0;background:url('title-hero.png') center/cover no-repeat;animation:drift 18s ease-in-out infinite alternate}.shade{position:fixed;inset:0;background:radial-gradient(circle at 73% 52%,transparent 0 18%,#02101b55 48%,#010b16e8 100%),linear-gradient(90deg,#020e1cea 0%,#062437bd 37%,transparent 74%)}.spray{position:fixed;inset:-25%;background:repeating-linear-gradient(115deg,transparent 0 35px,#baf6ff12 36px 38px,transparent 39px 78px);mix-blend-mode:screen;animation:sweep 14s linear infinite}.layout{position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;padding:clamp(28px,7vw,110px)}main{width:min(610px,92vw)}.eyebrow{display:flex;align-items:center;gap:12px;color:#7cecf1;font-size:13px;font-weight:900;letter-spacing:.18em}.eyebrow:before{content:"⚓";font-size:29px}h1{margin:16px 0 13px;font-size:clamp(57px,9vw,116px);line-height:.7;letter-spacing:-.1em;text-shadow:0 6px 0 #03111d,0 16px 34px #000}h1 span{display:block;margin-top:25px;color:#ffd64c;font-size:clamp(13px,1.8vw,21px);letter-spacing:.32em}.rule{width:162px;height:4px;margin:28px 0;background:linear-gradient(90deg,#ffcf3c,#2ed4ec);box-shadow:0 0 18px #2ed4ec}.lead{max-width:480px;color:#d4ebf2;font-size:clamp(14px,1.5vw,18px);line-height:1.7;text-shadow:0 2px 8px #000}.start{display:inline-flex;align-items:center;gap:12px;margin-top:26px;padding:17px 36px;border:2px solid #b7faff;border-radius:10px;background:linear-gradient(135deg,#21bfdf,#0b548e);box-shadow:0 8px 0 #032b55,0 0 32px #25c8e899;color:white;text-decoration:none;font-size:20px;font-weight:900;transition:.18s}.start:after{content:"→";font-size:25px}.start:hover{transform:translateY(-3px);filter:brightness(1.17)}.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px}.badge{padding:8px 11px;border:1px solid #9ee6ee66;border-radius:7px;background:#041b2aaf;color:#a9dce3;font-size:12px;backdrop-filter:blur(5px)}.status{position:fixed;z-index:2;right:clamp(22px,4vw,70px);bottom:34px;text-align:right;font-size:12px;letter-spacing:.12em;color:#cff6fa}.status b{display:block;margin-bottom:7px;color:#62e2ef;font-size:14px}@keyframes drift{from{transform:scale(1.02)}to{transform:scale(1.09) translate(-1.2%,-.7%)}}@keyframes sweep{from{transform:translateX(-4%)}to{transform:translateX(4%)}}@media(max-width:650px){.layout{align-items:flex-end;padding-bottom:85px}.shade{background:linear-gradient(0deg,#010b16f2 0%,#0416249c 58%,transparent 100%)}.status{display:none}}
+  </style>
+</head>
+<body>
+  <div class="hero"></div><div class="shade"></div><div class="spray"></div>
+  <div class="layout"><main>
+    <div class="eyebrow">OCEAN TERMINAL · SHIFT 06</div>
+    <h1>CARGO<br>MASTER<span>3D STOWAGE PUZZLE</span></h1>
+    <div class="rule"></div>
+    <p class="lead">하부 선창과 상갑판을 오가며 컨테이너를 적재하세요. 공간 효율, 특수 화물 규칙, 무게 균형이 모두 당신의 판단에 달려 있습니다.</p>
+    <a class="start" href="cargo-hold.html">게임 시작</a>
+    <div class="badges"><span class="badge">3D 컨테이너선</span><span class="badge">선창 · 상갑판</span><span class="badge">무게중심 퍼즐</span></div>
+  </main></div>
+  <div class="status"><b>READY TO LOAD</b>CLICK START TO BEGIN</div>
+<script>document.querySelector('.start').href='cargo-hold.html?play=1';</script>
+</body>
+</html>
