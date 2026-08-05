@@ -74,20 +74,30 @@ window.addEventListener('load', () => {
   const pointedBow = new T.Mesh(bowGeometry, new T.MeshStandardMaterial({ color: 0x7d211c, roughness: 0.42, metalness: 0.32 }));
   pointedBow.position.set(0, 0, 9.7); pointedBow.castShadow = pointedBow.receiveShadow = true; pointedBow.visible = !ship.userData.cleanHull; ship.add(pointedBow);
 
-  function addZone(x, z, w, d, color, label, onDeck = false) {
+  function addZone(x, z, w, d, color, label, surfaceY) {
     const tile = new T.Mesh(new T.BoxGeometry(w * S - 0.12, 0.035, d * S - 0.12), new T.MeshStandardMaterial({ color, transparent: true, opacity: 0.62, emissive: color, emissiveIntensity: 0.25 }));
-    tile.position.set((x - (W - 1) / 2 + (w - 1) / 2) * S, onDeck ? deckBaseY + .01 : holdFloorY + .1, (z - (D - 1) / 2 + (d - 1) / 2) * S);
+    tile.position.set((x - (W - 1) / 2 + (w - 1) / 2) * S, surfaceY, (z - (D - 1) / 2 + (d - 1) / 2) * S);
     ship.add(tile);
     const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
     const context = canvas.getContext('2d'); context.fillStyle = '#ffffff'; context.font = 'bold 24px sans-serif'; context.textAlign = 'center'; context.fillText(label, 128, 39);
     const marker = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(canvas), transparent: true }));
-    marker.position.copy(tile.position); marker.position.y = onDeck ? deckBaseY + .22 : holdFloorY + .57; marker.scale.set(1.6, 0.4, 1); ship.add(marker);
+    marker.position.copy(tile.position); marker.position.y += .22; marker.scale.set(1.6, 0.4, 1); ship.add(marker);
   }
-  addZone(0, 2, 2, 1, 0xe69b27, 'FLAT RACK', true);
-  addZone(1, 3, 1, 1, 0x1689e1, 'REEFER ⚡');
-  addZone(4, 10, 1, 1, 0x1689e1, 'REEFER ⚡');
-  addZone(3, 7, 1, 1, 0x8452a5, 'TANK SAFE');
-  addZone(1, 9, 3, 1, 0x333333, 'HEAVY · L1');
+  const customZoneStyle = {
+    flat: [0xe69b27, 'FLAT RACK'],
+    reefer: [0x1689e1, 'REEFER ⚡'],
+    tank: [0x8452a5, 'TANK SAFE']
+  };
+  for (const [zoneKey, zoneType] of MANUAL_ZONES) {
+    const style = customZoneStyle[zoneType];
+    if (!style) continue;
+    const [area, x, z, y] = zoneKey.split(':');
+    const level = +y;
+    const surfaceY = area === 'deck'
+      ? deckBaseY + Math.max(0, level - HOLD_LAYERS) * 1.56 + .01
+      : holdFloorY + level * levelStep + .1;
+    addZone(+x, +z, 1, 1, style[0], style[1], surfaceY);
+  }
   for (let level = 1; level < H; level += 1) {
     const frame = new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(W * S + 0.12, 0.01, D * S + 0.12)), new T.LineBasicMaterial({ color: 0x74e5db, transparent: true, opacity: 0.16 }));
     frame.position.y = 0.13 + level * 1.62; ship.add(frame);
@@ -375,16 +385,20 @@ window.addEventListener('load', () => {
   // These rows draw the playable upper-deck strips. They do not reserve or
   // block the corresponding cells inside the hold.
   const deckRowValues = [...new Set([0, Math.floor((D - 1) / 2), D - 1])];
-  const originalAllowed = allowed;
   allowed = function allowedInsideOneHold(item, x, z, y) {
     const footprint = cells(item, x, z);
     const allCustomZone = (zone) => footprint.every(([cellX, cellZ]) => MANUAL_ZONES.get(`${loadArea}:${cellX}:${cellZ}:${y}`) === zone);
     if (item.t === 'flat' && allCustomZone('flat')) return true;
     if (item.t === 'reefer' && allCustomZone('reefer')) return true;
     if ((item.t === 'liquid' || item.t === 'flammable') && allCustomZone('tank')) return true;
-    if (loadArea === 'deck') return item.t === 'general' || item.t === 'flat' || item.t === 'reefer' || item.t === 'flammable';
-    if (item.t === 'flat') return false;
-    return originalAllowed(item, x, z, y);
+    if (item.t === 'general') return true;
+    if (item.t === 'flat' || item.t === 'reefer' || item.t === 'flammable') return loadArea === 'deck';
+    if (item.t === 'liquid') return loadArea === 'hold' && y < Math.min(2, HOLD_LAYERS);
+    if (item.t === 'heavy') {
+      const centerX = x + (item.dir === 'x' ? (item.s - 1) / 2 : 0);
+      return loadArea === 'hold' && y === 0 && Math.abs(centerX - (W - 1) / 2) <= 1;
+    }
+    return false;
   };
   // Special cargo may be loaded onto a supported surface, but never used as a
   // supporting surface itself. Refrigerated boxes additionally need a clear
