@@ -377,6 +377,11 @@ window.addEventListener('load', () => {
   const deckRowValues = [...new Set([0, Math.floor((D - 1) / 2), D - 1])];
   const originalAllowed = allowed;
   allowed = function allowedInsideOneHold(item, x, z, y) {
+    const footprint = cells(item, x, z);
+    const allCustomZone = (zone) => footprint.every(([cellX, cellZ]) => MANUAL_ZONES.get(`${loadArea}:${cellX}:${cellZ}:${y}`) === zone);
+    if (item.t === 'flat' && allCustomZone('flat')) return true;
+    if (item.t === 'reefer' && allCustomZone('reefer')) return true;
+    if ((item.t === 'liquid' || item.t === 'flammable') && allCustomZone('tank')) return true;
     if (loadArea === 'deck') return item.t === 'general' || item.t === 'flat' || item.t === 'reefer' || item.t === 'flammable';
     if (item.t === 'flat') return false;
     return originalAllowed(item, x, z, y);
