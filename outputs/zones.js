@@ -285,7 +285,7 @@ window.addEventListener('load', () => {
   dockStyle.textContent = `
     .controls.compact-actions{position:fixed;z-index:45;left:12px;top:auto;bottom:12px;display:flex;gap:6px}.controls.compact-actions button{padding:8px 10px;font-size:11px}.controls.compact-actions #turn,.controls.compact-actions #view,.controls.compact-actions #title-screen{display:none}
     .help-quick,.title-quick,.reset-quick{display:grid;place-items:center;width:42px;height:42px;padding:0;border-radius:50%;border:2px solid #8ce8ff;background:linear-gradient(145deg,#18a9e5,#0872b8);color:#fff;font-size:27px;line-height:1;box-shadow:0 5px 15px #001c3888}
-    .help-quick,.title-quick,.reset-quick{position:fixed;z-index:45;left:202px;font-size:25px}.title-quick{top:14px}.reset-quick{top:62px}.help-quick{top:110px}.reset-quick svg{width:27px;height:27px;fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+    .help-quick,.title-quick,.reset-quick{position:fixed;z-index:45;left:202px;font-size:25px}.title-quick{top:14px}.reset-quick{top:62px}.help-quick{top:110px}.title-quick svg,.reset-quick svg{width:27px;height:27px;fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
     .ui-hidden .controls.compact-actions{display:none}.ui-hidden .title-quick{left:8px;top:8px}.ui-hidden .reset-quick{left:8px;top:56px}.ui-hidden .help-quick{left:8px;top:104px}.ui-hidden .ui-toggle{top:12px}.ui-hidden .cargo-toggle{top:56px}
     @media(max-width:760px){.controls.compact-actions{left:8px;bottom:8px}.title-quick,.reset-quick,.help-quick{left:188px}.ui-hidden .title-quick,.ui-hidden .reset-quick,.ui-hidden .help-quick{left:8px}}
   `;
@@ -311,10 +311,10 @@ window.addEventListener('load', () => {
   document.body.append(helpQuick);
   const titleQuick = document.createElement('button');
   titleQuick.className = 'title-quick';
-  titleQuick.setAttribute('aria-label', '타이틀 화면으로 돌아가기');
-  titleQuick.title = '타이틀 화면으로 돌아가기';
-  titleQuick.textContent = '⌂';
-  titleQuick.onclick = () => location.href = 'index.html';
+  titleQuick.setAttribute('aria-label', '이전 화면으로 돌아가기');
+  titleQuick.title = 'AI 시뮬레이션으로 돌아가기';
+  titleQuick.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M14 6 4 16l10 10M5 16h23"/></svg>';
+  titleQuick.onclick = () => { if (history.length > 1) history.back(); else location.href = 'optimizer.html'; };
   document.body.append(titleQuick);
 
   // Pick against the actual active loading surface. The former fixed sea-level
