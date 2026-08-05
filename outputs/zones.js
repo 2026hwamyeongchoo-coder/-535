@@ -325,10 +325,17 @@ window.addEventListener('load', () => {
     pointer.x = (event.clientX - rect.left) / rect.width * 2 - 1;
     pointer.y = -(event.clientY - rect.top) / rect.height * 2 + 1;
     ray.setFromCamera(pointer, camera);
+    // The ship heaves, rolls and pitches with the waves. Convert the picking
+    // ray into ship-local space so the clickable grid follows that motion.
+    ship.updateMatrixWorld(true);
+    const inverseShip = ship.matrixWorld.clone().invert();
+    const localOrigin = ray.ray.origin.clone().applyMatrix4(inverseShip);
+    const localTarget = ray.ray.origin.clone().add(ray.ray.direction).applyMatrix4(inverseShip);
+    const localDirection = localTarget.sub(localOrigin).normalize();
     const surfaceY = loadArea === 'deck' ? deckBaseY : holdFloorY;
     const loadingPlane = new T.Plane(new T.Vector3(0, 1, 0), -surfaceY);
     const point = new T.Vector3();
-    ray.ray.intersectPlane(loadingPlane, point);
+    if (!new T.Ray(localOrigin, localDirection).intersectPlane(loadingPlane, point)) return null;
     const x = Math.floor(point.x / S + W / 2);
     const z = Math.floor(point.z / S + D / 2);
     return x >= 0 && x < W && z >= 0 && z < D ? [x, z] : null;
