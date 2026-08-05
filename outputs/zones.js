@@ -863,12 +863,60 @@ window.addEventListener('load', () => {
     sprayGroup.add(spray);
   }
   scene.add(sprayGroup);
+  const sideSprayGroup = new T.Group();
+  sideSprayGroup.visible = false;
+  for (let i = 0; i < 44; i += 1) {
+    const splash = new T.Mesh(sprayGeometry, new T.MeshBasicMaterial({
+      color: i % 5 === 0 ? 0xffffff : 0xc8f1ff,
+      transparent: true, opacity: 0, depthWrite: false,
+      blending: T.AdditiveBlending
+    }));
+    splash.userData.phase = i / 44;
+    splash.userData.side = i % 2 ? -1 : 1;
+    splash.renderOrder = 7;
+    sideSprayGroup.add(splash);
+  }
+  scene.add(sideSprayGroup);
+
+  // Soft foam stamps are revealed along the actual curved route. Unlike the
+  // short live wake, these remain on the sea after the ship has passed.
+  const foamCanvas = document.createElement('canvas');
+  foamCanvas.width = 256; foamCanvas.height = 128;
+  const foamContext = foamCanvas.getContext('2d');
+  const foamGradient = foamContext.createRadialGradient(128, 64, 5, 128, 64, 118);
+  foamGradient.addColorStop(0, 'rgba(255,255,255,.9)');
+  foamGradient.addColorStop(.34, 'rgba(215,247,255,.64)');
+  foamGradient.addColorStop(1, 'rgba(190,236,250,0)');
+  foamContext.fillStyle = foamGradient; foamContext.fillRect(0, 0, 256, 128);
+  for (let i = 0; i < 38; i += 1) {
+    foamContext.fillStyle = `rgba(255,255,255,${.1 + (i % 5) * .035})`;
+    foamContext.beginPath();
+    foamContext.arc((i * 71) % 230 + 13, (i * 43) % 104 + 12, 2 + i % 6, 0, Math.PI * 2);
+    foamContext.fill();
+  }
+  const foamTexture = new T.CanvasTexture(foamCanvas);
+  const trailGroup = new T.Group();
+  const trailStamps = [];
+  for (let i = 0; i < 34; i += 1) {
+    const stamp = new T.Mesh(
+      new T.PlaneGeometry(Math.max(3.2, halfBeam * 1.18), 5.8),
+      new T.MeshBasicMaterial({ map: foamTexture, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending })
+    );
+    stamp.rotation.x = -Math.PI / 2;
+    stamp.visible = false;
+    stamp.renderOrder = 3;
+    trailStamps.push(stamp);
+    trailGroup.add(stamp);
+  }
+  scene.add(trailGroup);
   let departure = null;
   window.playDeparture = (complete) => {
     if (departure) return;
     departure = { started: performance.now() * .001, complete, originX: ship.position.x, originZ: ship.position.z };
     wakeGroup.visible = true;
     sprayGroup.visible = true;
+    sideSprayGroup.visible = true;
+    trailStamps.forEach((stamp) => { stamp.visible = false; stamp.material.opacity = 0; });
     document.body.classList.add('departing');
   };
 
@@ -919,21 +967,21 @@ window.addEventListener('load', () => {
     const time = clock.getElapsedTime();
     if (departure) {
       const elapsed = performance.now() * .001 - departure.started;
-      const progress = Math.min(1, elapsed / 4.65);
+      const progress = Math.min(1, elapsed / 5.35);
       const eased = progress * progress * (3 - 2 * progress);
-      const driftProgress = Math.max(0, Math.min(1, (progress - .46) / .54));
+      const driftProgress = Math.max(0, Math.min(1, (progress - .32) / .68));
       const drift = driftProgress * driftProgress * (3 - 2 * driftProgress);
-      const forwardDistance = Math.max(52, D * S * 2.45);
-      const leftDistance = Math.max(14, W * S * 1.55);
+      const forwardDistance = Math.max(70, D * S * 3.1);
+      const leftDistance = Math.max(27, W * S * 2.8);
       ship.position.z = departure.originZ + eased * forwardDistance;
       ship.position.x = departure.originX - drift * leftDistance;
       ship.position.y = Math.sin(time * 1.45) * .055 + eased * .16;
       ship.rotation.x = -.012 - eased * .018;
-      ship.rotation.y = -drift * .48;
-      ship.rotation.z = Math.sin(time * .82) * .005 * (1 - progress) + drift * .032;
-      wakeGroup.position.x = ship.position.x * .42;
-      wakeGroup.position.z = eased * 13.5;
-      wakeGroup.rotation.y = -drift * .19;
+      ship.rotation.y = -drift * 1.02;
+      ship.rotation.z = Math.sin(time * .82) * .006 * (1 - progress) + drift * .078;
+      wakeGroup.position.x = ship.position.x * .62;
+      wakeGroup.position.z = eased * 18.5;
+      wakeGroup.rotation.y = -drift * .52;
       wakeGroup.scale.set(1 + eased * .48, 1 + eased * .9, 1);
       wakeGroup.children.forEach((wake) => {
         const strength = wake.userData.centerFoam ? .82 : .72;
@@ -950,12 +998,42 @@ window.addEventListener('load', () => {
         spray.scale.set(size * 1.35, size, size * 1.8);
         spray.material.opacity = (1 - age) * sprayStrength * .94;
       });
+      const yaw = ship.rotation.y;
+      sideSprayGroup.children.forEach((splash, index) => {
+        const age = (elapsed * (1.75 + (index % 6) * .06) + splash.userData.phase) % 1;
+        const localX = splash.userData.side * (halfBeam * (.88 + age * .18));
+        const localZ = halfLength * (.64 - age * 1.25);
+        splash.position.x = ship.position.x + localX * Math.cos(yaw) + localZ * Math.sin(yaw);
+        splash.position.z = ship.position.z - localX * Math.sin(yaw) + localZ * Math.cos(yaw);
+        splash.position.y = movingSea.position.y + .66 + Math.sin(age * Math.PI) * (1.15 + drift * 2.65);
+        const crash = .22 + age * .52 + drift * .58;
+        splash.scale.set(crash * 1.15, crash * (1.35 + drift), crash * .72);
+        splash.material.opacity = (1 - age) * Math.min(1, progress * 5) * (.48 + drift * .48);
+      });
+      trailStamps.forEach((stamp, index) => {
+        const routeT = index / (trailStamps.length - 1);
+        if (routeT > progress) return;
+        const routeEase = routeT * routeT * (3 - 2 * routeT);
+        const routeDriftProgress = Math.max(0, Math.min(1, (routeT - .32) / .68));
+        const routeDrift = routeDriftProgress * routeDriftProgress * (3 - 2 * routeDriftProgress);
+        stamp.visible = true;
+        stamp.position.set(
+          departure.originX - routeDrift * leftDistance,
+          movingSea.position.y + .76,
+          departure.originZ + routeEase * forwardDistance - halfLength * .78
+        );
+        stamp.rotation.z = routeDrift * .92;
+        stamp.scale.set(1 + routeDrift * .65, 1 + eased * .34, 1);
+        const trailAge = Math.max(0, progress - routeT);
+        stamp.material.opacity = Math.max(.22, .76 - trailAge * .62);
+      });
       waterUniforms.uTime.value = time * (1 + eased * .55);
       if (progress >= 1) {
         const complete = departure.complete;
         departure = null;
         wakeGroup.visible = false;
         sprayGroup.visible = false;
+        sideSprayGroup.visible = false;
         document.body.classList.remove('departing');
         complete();
       }
