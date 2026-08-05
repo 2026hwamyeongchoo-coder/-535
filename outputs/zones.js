@@ -479,4 +479,61 @@ window.addEventListener('load', () => {
     guide.position.y = -1.62 + level * levelStep;
     ship.add(guide);
   }
+
+  // Give the world its own motion too.  The ship now rides a small swell while
+  // the water and harbour panorama drift in the opposite direction, so the
+  // vessel is not the only object that appears to move on screen.
+  const waveCanvas = document.createElement('canvas');
+  waveCanvas.width = waveCanvas.height = 512;
+  const waveContext = waveCanvas.getContext('2d');
+  const waveGradient = waveContext.createLinearGradient(0, 0, 512, 512);
+  waveGradient.addColorStop(0, '#053d5a'); waveGradient.addColorStop(1, '#0a7190');
+  waveContext.fillStyle = waveGradient; waveContext.fillRect(0, 0, 512, 512);
+  waveContext.strokeStyle = 'rgba(207,246,255,.22)'; waveContext.lineWidth = 2;
+  for (let row = 18; row < 512; row += 38) {
+    waveContext.beginPath();
+    for (let column = -20; column < 540; column += 20) {
+      const y = row + Math.sin(column * .043 + row) * 5;
+      column < 0 ? waveContext.moveTo(column, y) : waveContext.lineTo(column, y);
+    }
+    waveContext.stroke();
+  }
+  const waveTexture = new T.CanvasTexture(waveCanvas);
+  waveTexture.wrapS = waveTexture.wrapT = T.RepeatWrapping;
+  waveTexture.repeat.set(10, 10);
+  const movingSea = new T.Mesh(
+    new T.PlaneGeometry(180, 180),
+    new T.MeshStandardMaterial({ map: waveTexture, color: 0x176b82, roughness: .56, metalness: .24 })
+  );
+  movingSea.rotation.x = -Math.PI / 2;
+  movingSea.position.y = -2.64;
+  movingSea.receiveShadow = true;
+  scene.add(movingSea);
+
+  if (typeof harborTexture !== 'undefined') {
+    harborTexture.wrapS = harborTexture.wrapT = T.RepeatWrapping;
+    harborTexture.repeat.set(1.04, 1.04);
+  }
+
+  animate = function animateWithWorldMotion() {
+    requestAnimationFrame(animateWithWorldMotion);
+    const time = clock.getElapsedTime();
+    if (!ended) {
+      const heave = Math.sin(time * .72) * .045 + Math.sin(time * 1.27) * .015;
+      const roll = Math.sin(time * .58) * .009;
+      const pitch = Math.sin(time * .43 + .8) * .006;
+      ship.position.y = heave;
+      ship.rotation.z = roll;
+      ship.rotation.x = pitch;
+      movingSea.position.x = -Math.sin(time * .19) * .32;
+      movingSea.position.z = -Math.cos(time * .16) * .42;
+      waveTexture.offset.x = time * .006;
+      waveTexture.offset.y = time * .004;
+      if (typeof harborTexture !== 'undefined') {
+        harborTexture.offset.x = .02 + Math.sin(time * .22) * .012 - roll * .35;
+        harborTexture.offset.y = .01 + Math.sin(time * .43) * .006 - heave * .035;
+      }
+    }
+    renderer.render(scene, camera);
+  };
 });
