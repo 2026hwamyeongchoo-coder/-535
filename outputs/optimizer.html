@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <header class="top"><div class="brand"><b>⚓</b><strong>CARGO MASTER<span>AI STOWAGE LAB</span></strong></div><nav><a href="index.html">⌂ 타이틀</a><a href="cargo-hold.html?play=1">게임 시작</a></nav></header>
+  <header class="top"><div class="brand"><b>⚓</b><strong>CARGO MASTER<span>AI STOWAGE LAB</span></strong></div><nav><a href="index.html">⌂ 타이틀</a><a id="start-game" href="cargo-hold.html?play=1">게임 시작</a></nav></header>
   <section class="config"><strong>선박 공간 설정</strong><label>선창 층수<input id="hold-layers" type="number" min="1" max="6" value="2"></label><label>상갑판 층수<input id="deck-layers" type="number" min="1" max="6" value="2"></label><label>열 수(앞뒤)<input id="bay-columns" type="number" min="4" max="24" value="12"></label><label>행 수(좌우)<input id="bay-rows" type="number" min="3" max="10" value="5"></label><button id="apply-config">설정 적용</button></section>
   <main class="layout">
     <section class="panel manifest-panel"><h2>화물 목록 · 총 <span id="cargo-total">60</span>개</h2><div class="manifest" id="manifest"></div></section>
@@ -47,7 +47,8 @@
     function renderGrid(){const [area,level]=activeView.split('-');const host=document.querySelector('#grid');host.innerHTML='';host.style.gridTemplateColumns=`repeat(${W},1fr)`;host.style.gridTemplateRows=`repeat(${D},1fr)`;document.querySelector('.ship').style.aspectRatio=`${Math.max(4,W)}/${Math.max(3,D)}`;for(let z=0;z<D;z++)for(let x=0;x<W;x++){const cell=document.createElement('div');const p=board.get(key(area,x,z,+level));cell.className=`cell${p?' filled':''}`;if(p){cell.style.background=colors[p.item.type];cell.innerHTML=`<span>${p.item.id}</span><i>${p.item.serial}</i>`;cell.title=`${p.item.id} · ${names[p.item.type]}`}host.append(cell)}}
     function numberValue(id,min,max){const input=document.querySelector(`#${id}`);const value=Math.max(min,Math.min(max,Math.round(+input.value||min)));input.value=value;return value}
     function applyConfiguration(){holdLayers=numberValue('hold-layers',1,6);deckLayers=numberValue('deck-layers',1,6);W=numberValue('bay-columns',4,24);D=numberValue('bay-rows',3,10);activeView='hold-0';buildCargo();resetBoard();renderTabs();document.querySelector('#empty').style.display='block';document.querySelector('#status').textContent='새 선박 설정 적용 완료';log(`${W}열 × ${D}행 · 선창 ${holdLayers}층 · 상갑판 ${deckLayers}층`)}
-    document.querySelector('#run').onclick=optimize;document.querySelector('#apply-config').onclick=applyConfiguration;buildCargo();resetBoard();renderTabs();
+    function startConfiguredGame(event){event.preventDefault();document.querySelectorAll('.cargo-count').forEach(input=>{specs[+input.dataset.spec][4]=Math.max(0,Math.min(99,+input.value||0))});holdLayers=numberValue('hold-layers',1,6);deckLayers=numberValue('deck-layers',1,6);W=numberValue('bay-columns',4,24);D=numberValue('bay-rows',3,10);const query=new URLSearchParams({play:'1',hold:String(holdLayers),deck:String(deckLayers),cols:String(W),rows:String(D),cargo:specs.map(spec=>spec[4]).join(',')});location.href=`cargo-hold.html?${query}`}
+    document.querySelector('#run').onclick=optimize;document.querySelector('#apply-config').onclick=applyConfiguration;document.querySelector('#start-game').onclick=startConfiguredGame;buildCargo();resetBoard();renderTabs();
   </script>
 </body>
 </html>
