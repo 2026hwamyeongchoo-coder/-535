@@ -28,57 +28,61 @@ window.addEventListener('load', () => {
   const deckSteel = new T.MeshStandardMaterial({ color: 0x415961, roughness: 0.46, metalness: 0.52 });
   const whiteSteel = new T.MeshStandardMaterial({ color: 0xd6e2e3, roughness: 0.42, metalness: 0.45 });
   const deckBaseY = 0.60, holdDepth = Math.max(3.42, HOLD_LAYERS * 0.72), holdFloorY = deckBaseY - holdDepth, levelStep = holdDepth / HOLD_LAYERS, hullHeight = holdDepth + 0.72, hullCenterY = deckBaseY - hullHeight / 2;
-  cleanAdd(new T.BoxGeometry(W * S + 1.0, .46, D * S - 1.2), hullSteel, [0, holdFloorY - .28, -1.0]);
-  [-1, 1].forEach((side) => {
-    cleanAdd(new T.BoxGeometry(.5, hullHeight, D * S - 1.2), hullSteel, [side * (W * S / 2 + .25), hullCenterY, -1.0]);
-    cleanAdd(new T.BoxGeometry(.54, hullHeight * .54, D * S - 1.14), navySteel, [side * (W * S / 2 + .27), deckBaseY - hullHeight * .27, -1.0]);
-    cleanAdd(new T.BoxGeometry(.565, .09, D * S - 1.05), whiteSteel, [side * (W * S / 2 + .29), deckBaseY - hullHeight * .54, -1.0]);
-    for (let seam = 1; seam < 5; seam += 1) cleanAdd(new T.BoxGeometry(.574, .018, D * S - 1.3), darkSteel, [side * (W * S / 2 + .295), deckBaseY - seam * hullHeight * .105, -1.0]);
+  const halfBeam = W * S / 2 + .52, halfLength = D * S / 2 + .28;
+  const waterlineY = deckBaseY - Math.min(1.25, hullHeight * .34), keelY = holdFloorY - .42;
+  const hullStations = [[-halfLength,.9],[-halfLength*.82,1],[-halfLength*.25,1],[halfLength*.48,.99],[halfLength*.7,.88],[halfLength*.86,.58],[halfLength*.96,.25],[halfLength*1.02,.025]];
+  const makeHullBand = (side, topY, bottomY, topScale, bottomScale, material) => {
+    const positions=[],indices=[];
+    hullStations.forEach(([z,factor])=>positions.push(side*halfBeam*factor*topScale,topY,z,side*halfBeam*factor*bottomScale,bottomY,z));
+    for(let i=0;i<hullStations.length-1;i++){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,b,d,a,d,c)}
+    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();
+    return cleanAdd(geometry,material,[0,0,0]);
+  };
+  [-1,1].forEach(side=>{
+    makeHullBand(side,deckBaseY-.03,waterlineY+.05,1,.98,navySteel);
+    makeHullBand(side,waterlineY-.05,keelY,.98,.22,hullSteel);
+    makeHullBand(side,waterlineY+.05,waterlineY-.05,1,.99,whiteSteel);
   });
-  cleanAdd(new T.BoxGeometry(W * S + .5, hullHeight, .5), hullSteel, [0, hullCenterY, -D * S / 2 + .52]);
-  cleanAdd(new T.BoxGeometry(W * S + .56, hullHeight * .54, .54), navySteel, [0, deckBaseY - hullHeight * .27, -D * S / 2 + .49]);
-  const sharpBow = new T.BufferGeometry();
-  sharpBow.setAttribute('position', new T.BufferAttribute(new Float32Array([
-    -4.75,.36,-1.35, 4.75,.36,-1.35, -4.55,holdFloorY-.28,-1.35, 4.55,holdFloorY-.28,-1.35,
-    -.42,.26,2.18, .42,.26,2.18, -.16,holdFloorY+.42,2.18, .16,holdFloorY+.42,2.18
-  ]), 3));
-  sharpBow.setIndex([0,1,5,0,5,4, 0,4,6,0,6,2, 1,3,7,1,7,5, 2,6,7,2,7,3, 4,5,7,4,7,6, 0,2,3,0,3,1]);
-  sharpBow.computeVertexNormals();
-  cleanAdd(sharpBow, new T.MeshStandardMaterial({ color: 0x102c3a, roughness: 0.38, metalness: 0.5, side: T.DoubleSide }), [0,0,9.55]);
-  const bulbousBow = cleanAdd(new T.SphereGeometry(1, 36, 22), hullSteel, [0, holdFloorY + .55, D * S / 2 + .42]);
-  bulbousBow.scale.set(Math.max(1.25, W * S * .16), .72, 1.7);
-  const deckMesh = cleanAdd(new T.BoxGeometry(W * S + .55, .22, D * S + .6), deckSteel, [0, .48, 0]); deckMesh.userData.keepDeck = true;
-  [-1,1].forEach((side) => cleanAdd(new T.BoxGeometry(.18,.7,D*S+.25),whiteSteel,[side*(W*S/2+.26),.82,0]));
-  cleanAdd(new T.BoxGeometry(5.4,.65,1.9), whiteSteel, [0, .92, -9.65]);
-  cleanAdd(new T.BoxGeometry(4.7,1.55,1.55), whiteSteel, [0, 1.96, -9.65]);
-  const bridgeWindows = cleanAdd(new T.BoxGeometry(4.18,.46,.08), new T.MeshStandardMaterial({color:0x123e53,roughness:.18,metalness:.7}), [0, 2.25, -8.84]);
-  cleanAdd(new T.BoxGeometry(5.35,.18,2.08), whiteSteel, [0, 2.85, -9.65]);
+  const keelPositions=[],keelIndices=[];
+  hullStations.forEach(([z,factor])=>keelPositions.push(-halfBeam*factor*.22,keelY,z,halfBeam*factor*.22,keelY,z));
+  for(let i=0;i<hullStations.length-1;i++){const a=i*2,b=a+1,c=a+2,d=a+3;keelIndices.push(a,c,d,a,d,b)}
+  const keelGeometry=new T.BufferGeometry();keelGeometry.setAttribute('position',new T.Float32BufferAttribute(keelPositions,3));keelGeometry.setIndex(keelIndices);keelGeometry.computeVertexNormals();cleanAdd(keelGeometry,hullSteel,[0,0,0]);
+  cleanAdd(new T.BoxGeometry(halfBeam*1.8,hullHeight*.98,.28),navySteel,[0,hullCenterY,-halfLength]);
+  const deckShape=new T.Shape();deckShape.moveTo(-halfBeam,-halfLength);deckShape.lineTo(halfBeam,-halfLength);deckShape.lineTo(halfBeam,halfLength*.56);deckShape.lineTo(halfBeam*.84,halfLength*.78);deckShape.lineTo(halfBeam*.48,halfLength*.94);deckShape.lineTo(0,halfLength*1.025);deckShape.lineTo(-halfBeam*.48,halfLength*.94);deckShape.lineTo(-halfBeam*.84,halfLength*.78);deckShape.lineTo(-halfBeam,halfLength*.56);deckShape.closePath();
+  const deckGeometry=new T.ShapeGeometry(deckShape);deckGeometry.rotateX(Math.PI/2);const deckMesh=cleanAdd(deckGeometry,new T.MeshStandardMaterial({color:0x415961,roughness:.46,metalness:.52,side:T.DoubleSide}),[0,.49,0]);deckMesh.userData.keepDeck=true;
+  const bulbousBow=cleanAdd(new T.SphereGeometry(1,40,24),hullSteel,[0,keelY+.62,halfLength*1.015]);bulbousBow.scale.set(Math.max(.58,W*S*.075),.4,1.08);
+  [-1,1].forEach(side=>cleanAdd(new T.BoxGeometry(.16,.68,D*S*.78),whiteSteel,[side*(halfBeam-.08),.82,-D*S*.08]));
+  const bridgeZ=-halfLength+1.3,funnelZ=bridgeZ+2.05;
+  cleanAdd(new T.BoxGeometry(5.4,.65,1.9), whiteSteel, [0, .92, bridgeZ]);
+  cleanAdd(new T.BoxGeometry(4.7,1.55,1.55), whiteSteel, [0, 1.96, bridgeZ]);
+  const bridgeWindows = cleanAdd(new T.BoxGeometry(4.18,.46,.08), new T.MeshStandardMaterial({color:0x123e53,roughness:.18,metalness:.7}), [0, 2.25, bridgeZ+.79]);
+  cleanAdd(new T.BoxGeometry(5.35,.18,2.08), whiteSteel, [0, 2.85, bridgeZ]);
   // Bridge wings, side windows, funnel and navigation equipment make the
   // stern/superstructure readable from front, side and aerial viewpoints.
   [-1, 1].forEach((side) => {
-    cleanAdd(new T.BoxGeometry(1.0, .18, 1.62), whiteSteel, [side * 2.75, 2.42, -9.58]);
-    cleanAdd(new T.BoxGeometry(.05, .42, 1.05), darkSteel, [side * 2.38, 2.18, -9.55]);
-    const lifeboat = cleanAdd(new T.SphereGeometry(1, 24, 14), new T.MeshStandardMaterial({ color: 0xf17a24, roughness: .42, metalness: .2 }), [side * (W * S / 2 + .46), 1.65, -7.7]);
+    cleanAdd(new T.BoxGeometry(1.0, .18, 1.62), whiteSteel, [side * 2.75, 2.42, bridgeZ]);
+    cleanAdd(new T.BoxGeometry(.05, .42, 1.05), darkSteel, [side * 2.38, 2.18, bridgeZ]);
+    const lifeboat = cleanAdd(new T.SphereGeometry(1, 24, 14), new T.MeshStandardMaterial({ color: 0xf17a24, roughness: .42, metalness: .2 }), [side * (halfBeam + .18), 1.65, funnelZ]);
     lifeboat.scale.set(.28, .28, .88);
   });
-  cleanAdd(new T.BoxGeometry(1.45, 1.45, 1.35), new T.MeshStandardMaterial({ color: 0xe3aa28, roughness: .42, metalness: .35 }), [0, 2.05, -7.55]);
-  cleanAdd(new T.BoxGeometry(1.52, .38, 1.42), darkSteel, [0, 2.95, -7.55]);
-  const mast = cleanAdd(new T.CylinderGeometry(.055, .085, 2.2, 12), whiteSteel, [0, 4.0, -9.55]);
-  cleanAdd(new T.BoxGeometry(2.25, .07, .09), whiteSteel, [0, 4.58, -9.55]);
-  cleanAdd(new T.SphereGeometry(.16, 18, 12), new T.MeshStandardMaterial({ color: 0xf4f7f2, roughness: .25, metalness: .4 }), [-.72, 4.82, -9.55]);
-  cleanAdd(new T.SphereGeometry(.16, 18, 12), new T.MeshStandardMaterial({ color: 0xf4f7f2, roughness: .25, metalness: .4 }), [.72, 4.82, -9.55]);
+  cleanAdd(new T.BoxGeometry(1.45, 1.45, 1.35), new T.MeshStandardMaterial({ color: 0xe3aa28, roughness: .42, metalness: .35 }), [0, 2.05, funnelZ]);
+  cleanAdd(new T.BoxGeometry(1.52, .38, 1.42), darkSteel, [0, 2.95, funnelZ]);
+  cleanAdd(new T.CylinderGeometry(.055, .085, 2.2, 12), whiteSteel, [0, 4.0, bridgeZ]);
+  cleanAdd(new T.BoxGeometry(2.25, .07, .09), whiteSteel, [0, 4.58, bridgeZ]);
+  cleanAdd(new T.SphereGeometry(.16, 18, 12), new T.MeshStandardMaterial({ color: 0xf4f7f2, roughness: .25, metalness: .4 }), [-.72, 4.82, bridgeZ]);
+  cleanAdd(new T.SphereGeometry(.16, 18, 12), new T.MeshStandardMaterial({ color: 0xf4f7f2, roughness: .25, metalness: .4 }), [.72, 4.82, bridgeZ]);
   // Slim red cell guides along both hatch sides echo a real container ship
   // without placing obstructive bulkheads across the playable cargo bays.
   const guideSteel = new T.MeshStandardMaterial({ color: 0xa52b25, roughness: .43, metalness: .5 });
-  for (let z = -6.8; z <= 7.2; z += 3.5) [-1, 1].forEach((side) => {
+  for (let z = -halfLength*.55; z <= halfLength*.62; z += 3.5) [-1, 1].forEach((side) => {
     cleanAdd(new T.BoxGeometry(.09, 2.35, .09), guideSteel, [side * (W * S / 2 - .52), 1.72, z]);
     cleanAdd(new T.BoxGeometry(.09, .09, 1.35), guideSteel, [side * (W * S / 2 - .52), 2.86, z + .62]);
   });
   // Anchors and hawse pipes identify the pointed bow in low side views.
   [-1, 1].forEach((side) => {
-    const hawse = cleanAdd(new T.TorusGeometry(.21, .065, 10, 24), darkSteel, [side * (W * S / 2 + .57), -.05, D * S / 2 - 1.35]);
+    const hawse = cleanAdd(new T.TorusGeometry(.21, .065, 10, 24), darkSteel, [side * halfBeam*.68, -.05, halfLength*.76]);
     hawse.rotation.y = Math.PI / 2;
-    const anchorStem = cleanAdd(new T.BoxGeometry(.08, .58, .08), darkSteel, [side * (W * S / 2 + .61), -.38, D * S / 2 - 1.35]);
+    const anchorStem = cleanAdd(new T.BoxGeometry(.08, .58, .08), darkSteel, [side * halfBeam*.69, -.38, halfLength*.76]);
     anchorStem.rotation.z = side * .12;
   });
   // High-resolution hull name decals on port and starboard sides.
@@ -89,7 +93,7 @@ window.addEventListener('load', () => {
     const namePlate = new T.Mesh(new T.PlaneGeometry(Math.min(8.8, D * S * .42), 1.4), new T.MeshBasicMaterial({ map: nameTexture, transparent: true, side: T.DoubleSide, depthWrite: false }));
     namePlate.position.set(side * (W * S / 2 + .57), deckBaseY - hullHeight * .3, .2); namePlate.rotation.y = side * Math.PI / 2; ship.add(namePlate);
   });
-  for (let z = -10.5; z <= 10.5; z += 1.5) [-1,1].forEach((side) => cleanAdd(new T.BoxGeometry(.05,.5,.05), whiteSteel, [side*(W*S/2+.38),1.32,z]));
+  for (let z = -halfLength*.9; z <= halfLength*.7; z += 1.5) [-1,1].forEach((side) => cleanAdd(new T.BoxGeometry(.05,.5,.05), whiteSteel, [side*(halfBeam+.1),1.32,z]));
   makeGhost();
   const navigationBridge = ship.children.find((object) => object.isGroup && object.children.some((part) => part.geometry?.parameters?.width === 4.6));
   if (navigationBridge) {
@@ -113,8 +117,8 @@ window.addEventListener('load', () => {
     endWall.castShadow = endWall.receiveShadow = true;
     ship.add(endWall);
   });
-  // Replace the round placeholder bow with a connected, pointed container-ship bow.
-  ship.traverse((object) => { if (object.isMesh && object.geometry?.type === 'SphereGeometry') object.visible = false; });
+  // Legacy bow geometry remains disabled; the continuous station-based hull
+  // above supplies the actual pointed bow and V-shaped underwater body.
   const bowVertices = new Float32Array([
     -4.62, 0.34, -2.0, 4.62, 0.34, -2.0, -4.35, -2.48, -2.0, 4.35, -2.48, -2.0,
     -0.74, 0.30, 2.16, 0.74, 0.30, 2.16, -0.24, -1.42, 2.16, 0.24, -1.42, 2.16
