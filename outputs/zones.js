@@ -365,24 +365,13 @@ window.addEventListener('load', () => {
   });
 
   const baseUpdate = update;
-  // Cargo may not span a watertight bulkhead.  The gaps between these three
-  // ranges are the actual transverse partitions / access passages.
+  // These rows draw the playable upper-deck strips. They do not reserve or
+  // block the corresponding cells inside the hold.
   const deckRowValues = [...new Set([0, Math.floor((D - 1) / 2), D - 1])];
-  const deckRows = new Set(deckRowValues);
-  const isDeckFootprint = (item, x, z) => cells(item, x, z).every(([, row]) => deckRows.has(row));
-  const holdForRow = (z) => {
-    if (deckRows.has(z)) return -1;
-    return z < Math.floor((D - 1) / 2) ? 0 : 1;
-  };
   const originalAllowed = allowed;
   allowed = function allowedInsideOneHold(item, x, z, y) {
     if (loadArea === 'deck') return item.t === 'general' || item.t === 'flat' || item.t === 'reefer' || item.t === 'flammable';
     if (item.t === 'flat') return false;
-    const occupiedHolds = cells(item, x, z).map(([, row]) => holdForRow(row));
-    if (occupiedHolds.some((hold) => hold < 0) || new Set(occupiedHolds).size !== 1) return false;
-    if (isDeckFootprint(item, x, z)) {
-      return item.t === 'general' || item.t === 'flat' || item.t === 'reefer' || (item.t === 'flammable' && y === 0);
-    }
     return originalAllowed(item, x, z, y);
   };
   // Special cargo may be loaded onto a supported surface, but never used as a
@@ -434,7 +423,7 @@ window.addEventListener('load', () => {
   const containerHeight = (item) => Math.min(item.id.includes('HC') ? 1.5 : 1.1, levelStep * (item.id.includes('HC') ? 0.92 : 0.76));
   const stackBase = (item, x, z, y) => {
     if ((item._onDeck || loadArea === 'deck') && y === HOLD_LAYERS) return deckBaseY;
-    if (y === 0) return isDeckFootprint(item, x, z) ? deckBaseY : holdFloorY;
+    if (y === 0) return holdFloorY;
     const supports = cells(item, x, z).map(([a, b]) => board[a][b][y - 1]);
     return Math.max(...supports.map((support) => support.item._stackBase + containerHeight(support.item)));
   };
