@@ -277,6 +277,38 @@ window.addEventListener('load', () => {
   uiStyle.textContent = '.hud.collapsed-ui,.right.collapsed-ui{display:none!important}';
   document.head.append(uiStyle);
 
+  // Replace the long bottom action row with a compact floating tool drawer.
+  // The question-mark button stays beside the right HUD for direct help access.
+  const dockStyle = document.createElement('style');
+  dockStyle.textContent = `
+    .controls.control-dock{position:fixed;z-index:45;left:202px;top:14px;bottom:auto;display:block}
+    .control-dock-toggle,.help-quick{display:grid;place-items:center;width:42px;height:42px;padding:0;border-radius:50%;border:2px solid #8ce8ff;background:linear-gradient(145deg,#18a9e5,#0872b8);color:#fff;font-size:27px;line-height:1;box-shadow:0 5px 15px #001c3888}
+    .control-dock-toggle{font-size:24px}.control-dock-actions{display:none;position:absolute;top:49px;left:0;width:148px;padding:7px;background:#061d2df2;border:1px solid #77d5e7;border-radius:10px;box-shadow:0 10px 25px #0009;gap:5px}
+    .control-dock.open .control-dock-actions{display:grid}.control-dock-actions button{width:100%;padding:8px 7px;font-size:11px;text-align:left}.control-dock-actions #ui-toggle{position:static;display:block!important;width:100%;border:0;border-radius:7px;background:#126b93;color:#fff;font:inherit;font-weight:800;box-shadow:none}
+    .help-quick{position:fixed;z-index:45;right:244px;top:20px;font-size:25px}
+    @media(max-width:760px){.controls.control-dock{left:12px;top:12px}.help-quick{right:12px;top:62px}}
+  `;
+  document.head.append(dockStyle);
+  const controls = document.querySelector('.controls');
+  const originalHelpButton = document.querySelector('#help');
+  originalHelpButton.remove();
+  const actionDrawer = document.createElement('div');
+  actionDrawer.className = 'control-dock-actions';
+  [...controls.querySelectorAll('button')].forEach((button) => actionDrawer.append(button));
+  const dockToggle = document.createElement('button');
+  dockToggle.className = 'control-dock-toggle';
+  dockToggle.setAttribute('aria-label', '조작 메뉴 열기');
+  dockToggle.textContent = '⌃';
+  dockToggle.onclick = () => controls.classList.toggle('open');
+  controls.classList.add('control-dock');
+  controls.append(dockToggle, actionDrawer);
+  const helpQuick = document.createElement('button');
+  helpQuick.className = 'help-quick';
+  helpQuick.setAttribute('aria-label', '적재 도움말');
+  helpQuick.textContent = '?';
+  helpQuick.onclick = () => helpBackdrop.classList.add('open');
+  document.body.append(helpQuick);
+
   // Pick against the actual active loading surface. The former fixed sea-level
   // plane made a click on a visible container land in a different cell when
   // the camera was tilted, which prevented reliable stacking.
