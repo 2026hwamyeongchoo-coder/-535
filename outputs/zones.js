@@ -20,13 +20,14 @@ window.addEventListener('load', () => {
   const hullSteel = new T.MeshStandardMaterial({ color: 0x7d211c, roughness: 0.43, metalness: 0.32 });
   const deckSteel = new T.MeshStandardMaterial({ color: 0x536b73, roughness: 0.5, metalness: 0.48 });
   const whiteSteel = new T.MeshStandardMaterial({ color: 0xd6e2e3, roughness: 0.42, metalness: 0.45 });
-  cleanAdd(new T.BoxGeometry(W * S + 1.0, .46, D * S - 1.2), hullSteel, [0, -3.48, -1.0]);
-  [-1, 1].forEach((side) => cleanAdd(new T.BoxGeometry(.5, 3.9, D * S - 1.2), hullSteel, [side * (W * S / 2 + .25), -1.4, -1.0]));
-  cleanAdd(new T.BoxGeometry(W * S + .5, 3.9, .5), hullSteel, [0, -1.4, -11.28]);
+  const deckBaseY = 0.60, holdDepth = Math.max(3.42, HOLD_LAYERS * 0.72), holdFloorY = deckBaseY - holdDepth, levelStep = holdDepth / HOLD_LAYERS, hullHeight = holdDepth + 0.72, hullCenterY = deckBaseY - hullHeight / 2;
+  cleanAdd(new T.BoxGeometry(W * S + 1.0, .46, D * S - 1.2), hullSteel, [0, holdFloorY - .28, -1.0]);
+  [-1, 1].forEach((side) => cleanAdd(new T.BoxGeometry(.5, hullHeight, D * S - 1.2), hullSteel, [side * (W * S / 2 + .25), hullCenterY, -1.0]));
+  cleanAdd(new T.BoxGeometry(W * S + .5, hullHeight, .5), hullSteel, [0, hullCenterY, -D * S / 2 + .52]);
   const sharpBow = new T.BufferGeometry();
   sharpBow.setAttribute('position', new T.BufferAttribute(new Float32Array([
-    -4.75,.36,-1.35, 4.75,.36,-1.35, -4.55,-3.48,-1.35, 4.55,-3.48,-1.35,
-    -.42,.26,2.18, .42,.26,2.18, -.16,-2.14,2.18, .16,-2.14,2.18
+    -4.75,.36,-1.35, 4.75,.36,-1.35, -4.55,holdFloorY-.28,-1.35, 4.55,holdFloorY-.28,-1.35,
+    -.42,.26,2.18, .42,.26,2.18, -.16,holdFloorY+.42,2.18, .16,holdFloorY+.42,2.18
   ]), 3));
   sharpBow.setIndex([0,1,5,0,5,4, 0,4,6,0,6,2, 1,3,7,1,7,5, 2,6,7,2,7,3, 4,5,7,4,7,6, 0,2,3,0,3,1]);
   sharpBow.computeVertexNormals();
@@ -75,12 +76,12 @@ window.addEventListener('load', () => {
 
   function addZone(x, z, w, d, color, label, onDeck = false) {
     const tile = new T.Mesh(new T.BoxGeometry(w * S - 0.12, 0.035, d * S - 0.12), new T.MeshStandardMaterial({ color, transparent: true, opacity: 0.62, emissive: color, emissiveIntensity: 0.25 }));
-    tile.position.set((x - (W - 1) / 2 + (w - 1) / 2) * S, onDeck ? 0.61 : -2.82, (z - (D - 1) / 2 + (d - 1) / 2) * S);
+    tile.position.set((x - (W - 1) / 2 + (w - 1) / 2) * S, onDeck ? deckBaseY + .01 : holdFloorY + .1, (z - (D - 1) / 2 + (d - 1) / 2) * S);
     ship.add(tile);
     const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
     const context = canvas.getContext('2d'); context.fillStyle = '#ffffff'; context.font = 'bold 24px sans-serif'; context.textAlign = 'center'; context.fillText(label, 128, 39);
     const marker = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(canvas), transparent: true }));
-    marker.position.copy(tile.position); marker.position.y = onDeck ? 0.82 : -2.25; marker.scale.set(1.6, 0.4, 1); ship.add(marker);
+    marker.position.copy(tile.position); marker.position.y = onDeck ? deckBaseY + .22 : holdFloorY + .57; marker.scale.set(1.6, 0.4, 1); ship.add(marker);
   }
   addZone(0, 2, 2, 1, 0xe69b27, 'FLAT RACK', true);
   addZone(1, 3, 1, 1, 0x1689e1, 'REEFER ⚡');
@@ -324,7 +325,7 @@ window.addEventListener('load', () => {
     pointer.x = (event.clientX - rect.left) / rect.width * 2 - 1;
     pointer.y = -(event.clientY - rect.top) / rect.height * 2 + 1;
     ray.setFromCamera(pointer, camera);
-    const surfaceY = loadArea === 'deck' ? 0.60 : -2.82;
+    const surfaceY = loadArea === 'deck' ? deckBaseY : holdFloorY;
     const loadingPlane = new T.Plane(new T.Vector3(0, 1, 0), -surfaceY);
     const point = new T.Vector3();
     ray.ray.intersectPlane(loadingPlane, point);
@@ -335,12 +336,13 @@ window.addEventListener('load', () => {
 
   const originalHeight = height;
   height = function heightForSelectedArea(item, x, z) {
-    if (loadArea !== 'deck') return originalHeight(item, x, z);
     const footprint = cells(item, x, z);
     if (footprint.some(([a, b]) => a < 0 || a >= W || b < 0 || b >= D)) return -1;
-    for (let y = 2; y < H; y += 1) {
+    const firstLevel = loadArea === 'deck' ? HOLD_LAYERS : 0;
+    const lastLevel = loadArea === 'deck' ? H : HOLD_LAYERS;
+    for (let y = firstLevel; y < lastLevel; y += 1) {
       if (footprint.some(([a, b]) => board[a][b][y])) continue;
-      if (y > 2 && footprint.some(([a, b]) => !board[a][b][y - 1])) continue;
+      if (y > firstLevel && footprint.some(([a, b]) => !board[a][b][y - 1])) continue;
       return y;
     }
     return -1;
@@ -364,14 +366,12 @@ window.addEventListener('load', () => {
   const baseUpdate = update;
   // Cargo may not span a watertight bulkhead.  The gaps between these three
   // ranges are the actual transverse partitions / access passages.
-  const deckRows = new Set([0, 4, 11]);
+  const deckRowValues = [...new Set([0, Math.floor((D - 1) / 2), D - 1])];
+  const deckRows = new Set(deckRowValues);
   const isDeckFootprint = (item, x, z) => cells(item, x, z).every(([, row]) => deckRows.has(row));
   const holdForRow = (z) => {
-    if (deckRows.has(z)) return 10 + z;
-    if (z >= 1 && z <= 3) return 0;
-    if (z >= 5 && z <= 7) return 1;
-    if (z >= 8 && z <= 10) return 2;
-    return -1;
+    if (deckRows.has(z)) return -1;
+    return z < Math.floor((D - 1) / 2) ? 0 : 1;
   };
   const originalAllowed = allowed;
   allowed = function allowedInsideOneHold(item, x, z, y) {
@@ -430,11 +430,10 @@ window.addEventListener('load', () => {
   };
   update();
 
-  const levelStep = 1.62;
-  const containerHeight = (item) => item.id.includes('HC') ? 1.5 : 1.1;
+  const containerHeight = (item) => Math.min(item.id.includes('HC') ? 1.5 : 1.1, levelStep * (item.id.includes('HC') ? 0.92 : 0.76));
   const stackBase = (item, x, z, y) => {
-    if ((item._onDeck || loadArea === 'deck') && y === 2) return 0.60;
-    if (y === 0) return isDeckFootprint(item, x, z) ? 0.60 : -2.82;
+    if ((item._onDeck || loadArea === 'deck') && y === HOLD_LAYERS) return deckBaseY;
+    if (y === 0) return isDeckFootprint(item, x, z) ? deckBaseY : holdFloorY;
     const supports = cells(item, x, z).map(([a, b]) => board[a][b][y - 1]);
     return Math.max(...supports.map((support) => support.item._stackBase + containerHeight(support.item)));
   };
@@ -455,7 +454,7 @@ window.addEventListener('load', () => {
       const line = new T.BufferGeometry().setFromPoints([new T.Vector3(column * width / 10, -height * 0.42, depth / 2 + 0.004), new T.Vector3(column * width / 10, height * 0.42, depth / 2 + 0.004)]);
       group.add(new T.Line(line, grooves));
     }
-    const base = item._stackBase ?? (-2.82 + y * levelStep);
+    const base = item._stackBase ?? (holdFloorY + y * levelStep);
     group.position.set((x - (W - 1) / 2 + (item.dir === 'x' ? (length - 1) / 2 : 0)) * S, base + height / 2, (z - (D - 1) / 2 + (item.dir === 'z' ? (length - 1) / 2 : 0)) * S);
     if (item._onDeck) group.traverse((part) => { part.userData.deckCargo = true; });
     ship.add(group);
@@ -513,16 +512,16 @@ window.addEventListener('load', () => {
     ship.add(part);
     return part;
   };
-  const holdCenters = [-6.2, 0, 6.2];
+  const holdCenters = [-D * S * .28, 0, D * S * .28];
   holdCenters.forEach((z) => {
-    addPart(new T.BoxGeometry(W * S - 1.1, 0.1, 5.25), steel, [0, -2.92, z]);
-    addPart(new T.BoxGeometry(0.18, 3.45, 5.35), innerWall, [-W * S / 2 + 0.4, -1.2, z]);
-    addPart(new T.BoxGeometry(0.18, 3.45, 5.35), innerWall, [W * S / 2 - 0.4, -1.2, z]);
-    addPart(new T.BoxGeometry(W * S - 0.9, 3.45, 0.18), innerWall, [0, -1.2, z - 2.6]);
-    addPart(new T.BoxGeometry(W * S - 0.9, 3.45, 0.18), innerWall, [0, -1.2, z + 2.6]);
+    addPart(new T.BoxGeometry(W * S - 1.1, 0.1, 5.25), steel, [0, holdFloorY, z]);
+    addPart(new T.BoxGeometry(0.18, holdDepth, 5.35), innerWall, [-W * S / 2 + 0.4, deckBaseY-holdDepth/2, z]);
+    addPart(new T.BoxGeometry(0.18, holdDepth, 5.35), innerWall, [W * S / 2 - 0.4, deckBaseY-holdDepth/2, z]);
+    addPart(new T.BoxGeometry(W * S - 0.9, holdDepth, 0.18), innerWall, [0, deckBaseY-holdDepth/2, z - 2.6]);
+    addPart(new T.BoxGeometry(W * S - 0.9, holdDepth, 0.18), innerWall, [0, deckBaseY-holdDepth/2, z + 2.6]);
   });
   // One continuous hold floor prevents visual gaps between cargo bays.
-  addPart(new T.BoxGeometry(W * S - 1.1, 0.1, D * S - 1.0), steel, [0, -2.92, 0]);
+  addPart(new T.BoxGeometry(W * S - 1.1, 0.1, D * S - 1.0), steel, [0, holdFloorY, 0]);
   // A real deck surrounds the hatch openings.  Only the three hatch mouths
   // remain open so the below-deck cargo holds can still be seen and loaded.
   const deckSurface = new T.MeshStandardMaterial({ color: 0x3d555d, roughness: 0.5, metalness: 0.52 });
@@ -538,7 +537,7 @@ window.addEventListener('load', () => {
   });
   // Three solid upper-deck strips are real playable deck positions, separate
   // from the recessed cargo holds below.
-  [0, 4, 11].forEach((row) => {
+  deckRowValues.forEach((row) => {
     const deckZ = (row - (D - 1) / 2) * S;
     const deckStrip = addPart(new T.BoxGeometry(W * S - 0.9, 0.14, S - 0.1), steel, [0, 0.41, deckZ]);
     deckStrip.userData.upperDeckSurface = true;
@@ -560,7 +559,7 @@ window.addEventListener('load', () => {
       new T.EdgesGeometry(new T.BoxGeometry(W * S - 0.85, 0.01, D * S - 0.85)),
       new T.LineBasicMaterial({ color: 0x7ee7df, transparent: true, opacity: 0.28 })
     );
-    guide.position.y = -2.82 + level * levelStep;
+    guide.position.y = holdFloorY + level * levelStep;
     ship.add(guide);
   }
 
