@@ -282,10 +282,10 @@ window.addEventListener('load', () => {
   // visible without a separate drawer toggle.
   const dockStyle = document.createElement('style');
   dockStyle.textContent = `
-    .controls.compact-actions{position:fixed;z-index:45;left:12px;top:auto;bottom:12px;display:flex;gap:6px}.controls.compact-actions button{padding:8px 10px;font-size:11px}.controls.compact-actions #turn,.controls.compact-actions #title-screen{display:none}
+    .controls.compact-actions{position:fixed;z-index:45;left:12px;top:auto;bottom:12px;display:flex;gap:6px}.controls.compact-actions button{padding:8px 10px;font-size:11px}.controls.compact-actions #turn,.controls.compact-actions #view,.controls.compact-actions #title-screen{display:none}
     .help-quick,.title-quick{display:grid;place-items:center;width:42px;height:42px;padding:0;border-radius:50%;border:2px solid #8ce8ff;background:linear-gradient(145deg,#18a9e5,#0872b8);color:#fff;font-size:27px;line-height:1;box-shadow:0 5px 15px #001c3888}
-    .help-quick,.title-quick{position:fixed;z-index:45;font-size:25px}.help-quick{right:244px;top:20px}.title-quick{display:flex;left:202px;top:14px;width:auto;padding:0 12px;font-size:12px;border-radius:9px}
-    .ui-hidden .controls.compact-actions{display:none}.ui-hidden .title-quick{display:flex;left:8px;top:8px}.ui-hidden .help-quick{right:12px;top:12px}.ui-hidden .ui-toggle{top:62px}.ui-hidden .cargo-toggle{top:106px}
+    .help-quick,.title-quick{position:fixed;z-index:45;font-size:25px}.help-quick{right:244px;top:20px}.title-quick{display:grid;left:202px;top:14px;width:42px;padding:0;font-size:25px;border-radius:50%}
+    .ui-hidden .controls.compact-actions{display:none}.ui-hidden .title-quick{display:grid;left:8px;top:8px}.ui-hidden .help-quick{right:12px;top:12px}.ui-hidden .ui-toggle{top:62px}.ui-hidden .cargo-toggle{top:106px}
     @media(max-width:760px){.controls.compact-actions{left:8px;bottom:8px}.help-quick{right:12px;top:62px}.ui-hidden .help-quick{top:12px}}
   `;
   document.head.append(dockStyle);
@@ -306,7 +306,7 @@ window.addEventListener('load', () => {
   titleQuick.className = 'title-quick';
   titleQuick.setAttribute('aria-label', '타이틀 화면으로 돌아가기');
   titleQuick.title = '타이틀 화면으로 돌아가기';
-  titleQuick.textContent = '⌂ 타이틀';
+  titleQuick.textContent = '⌂';
   titleQuick.onclick = () => location.href = 'index.html';
   document.body.append(titleQuick);
 
