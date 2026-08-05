@@ -347,11 +347,18 @@ window.addEventListener('load', () => {
     return -1;
   };
 
-  // Extend the vertical orbit after the base interaction handler runs. This
-  // permits views from below deck level for the cutaway inspection.
+  // Keep the camera above the water surface at every zoom distance. The lower
+  // limit adapts to the orbit radius, so zooming out cannot pull the camera
+  // underwater after the player has selected a low side view.
+  const minimumViewPhi = () => Math.asin(Math.max(-0.95, Math.min(0, -3.15 / dist)));
+  const cameraMoveBeforeWaterlineLimit = cameraMove;
+  cameraMove = function cameraMoveAboveWater() {
+    phi = Math.max(minimumViewPhi(), Math.min(1.35, phi));
+    cameraMoveBeforeWaterlineLimit();
+  };
   cv.addEventListener('pointermove', (event) => {
     if (!drag) return;
-    phi = Math.max(-0.32, Math.min(1.35, drag[3] + (event.clientY - drag[1]) * 0.006));
+    phi = Math.max(minimumViewPhi(), Math.min(1.35, drag[3] + (event.clientY - drag[1]) * 0.006));
     cameraMove();
   });
 
