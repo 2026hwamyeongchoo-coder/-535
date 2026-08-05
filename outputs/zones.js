@@ -341,6 +341,7 @@ window.addEventListener('load', () => {
     const firstLevel = loadArea === 'deck' ? HOLD_LAYERS : 0;
     const lastLevel = loadArea === 'deck' ? H : HOLD_LAYERS;
     for (let y = firstLevel; y < lastLevel; y += 1) {
+      if (footprint.some(([a, b]) => MANUAL_BLOCKED.has(`${loadArea}:${a}:${b}:${y}`))) continue;
       if (footprint.some(([a, b]) => board[a][b][y])) continue;
       if (y > firstLevel && footprint.some(([a, b]) => !board[a][b][y - 1])) continue;
       return y;
