@@ -22,9 +22,9 @@ window.addEventListener('load', () => {
   ship.clear();
   ship.userData.cleanHull = true;
   const cleanAdd = (geometry, material, position) => { const mesh = new T.Mesh(geometry, material); mesh.position.set(...position); mesh.castShadow = mesh.receiveShadow = true; ship.add(mesh); return mesh; };
-  const hullSteel = new T.MeshStandardMaterial({ color: 0x8c2f27, roughness: 0.48, metalness: 0.38 });
-  const navySteel = new T.MeshStandardMaterial({ color: 0x102c3a, roughness: 0.38, metalness: 0.5 });
-  const darkSteel = new T.MeshStandardMaterial({ color: 0x071a22, roughness: 0.35, metalness: 0.58 });
+  const hullSteel = new T.MeshStandardMaterial({ color: 0x8c2f27, roughness: 0.48, metalness: 0.38, side: T.DoubleSide });
+  const navySteel = new T.MeshStandardMaterial({ color: 0x102c3a, roughness: 0.38, metalness: 0.5, side: T.DoubleSide });
+  const darkSteel = new T.MeshStandardMaterial({ color: 0x071a22, roughness: 0.35, metalness: 0.58, side: T.DoubleSide });
   const deckSteel = new T.MeshStandardMaterial({ color: 0x415961, roughness: 0.46, metalness: 0.52 });
   const whiteSteel = new T.MeshStandardMaterial({ color: 0xd6e2e3, roughness: 0.42, metalness: 0.45 });
   const deckBaseY = 0.60, holdDepth = Math.max(3.42, HOLD_LAYERS * 0.72), holdFloorY = deckBaseY - holdDepth, levelStep = holdDepth / HOLD_LAYERS, hullHeight = holdDepth + 0.72, hullCenterY = deckBaseY - hullHeight / 2;
@@ -34,7 +34,13 @@ window.addEventListener('load', () => {
   const makeHullBand = (side, topY, bottomY, topScale, bottomScale, material) => {
     const positions=[],indices=[];
     hullStations.forEach(([z,factor])=>positions.push(side*halfBeam*factor*topScale,topY,z,side*halfBeam*factor*bottomScale,bottomY,z));
-    for(let i=0;i<hullStations.length-1;i++){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,b,d,a,d,c)}
+    for(let i=0;i<hullStations.length-1;i++){
+      const a=i*2,b=a+1,c=a+2,d=a+3;
+      // Port and starboard plates need opposite winding. Using the same index
+      // order made one entire side a back face that vanished at certain angles.
+      if(side<0) indices.push(a,b,d,a,d,c);
+      else indices.push(a,d,b,a,c,d);
+    }
     const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();
     return cleanAdd(geometry,material,[0,0,0]);
   };
@@ -90,7 +96,7 @@ window.addEventListener('load', () => {
   const nameContext = nameCanvas.getContext('2d'); nameContext.clearRect(0, 0, 1024, 192); nameContext.fillStyle = '#f1f5f4'; nameContext.font = '900 92px Arial'; nameContext.textAlign = 'center'; nameContext.fillText('CARGO MASTER', 512, 122);
   const nameTexture = new T.CanvasTexture(nameCanvas); nameTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
   [-1, 1].forEach((side) => {
-    const namePlate = new T.Mesh(new T.PlaneGeometry(Math.min(8.8, D * S * .42), 1.4), new T.MeshBasicMaterial({ map: nameTexture, transparent: true, side: T.DoubleSide, depthWrite: false }));
+    const namePlate = new T.Mesh(new T.PlaneGeometry(Math.min(8.8, D * S * .42), 1.4), new T.MeshBasicMaterial({ map: nameTexture, transparent: true, side: T.FrontSide, depthWrite: false }));
     namePlate.position.set(side * (W * S / 2 + .57), deckBaseY - hullHeight * .3, .2); namePlate.rotation.y = side * Math.PI / 2; ship.add(namePlate);
   });
   for (let z = -halfLength*.9; z <= halfLength*.7; z += 1.5) [-1,1].forEach((side) => cleanAdd(new T.BoxGeometry(.05,.5,.05), whiteSteel, [side*(halfBeam+.1),1.32,z]));
