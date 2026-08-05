@@ -86,7 +86,7 @@ window.addEventListener('load', () => {
   addZone(1, 3, 1, 1, 0x1689e1, 'REEFER ⚡');
   addZone(4, 10, 1, 1, 0x1689e1, 'REEFER ⚡');
   addZone(3, 7, 1, 1, 0x8452a5, 'TANK SAFE');
-  addZone(2, 9, 2, 1, 0x333333, 'HEAVY · L1');
+  addZone(1, 9, 3, 1, 0x333333, 'HEAVY · L1');
   for (let level = 1; level < H; level += 1) {
     const frame = new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(W * S + 0.12, 0.01, D * S + 0.12)), new T.LineBasicMaterial({ color: 0x74e5db, transparent: true, opacity: 0.16 }));
     frame.position.y = 0.13 + level * 1.62; ship.add(frame);
