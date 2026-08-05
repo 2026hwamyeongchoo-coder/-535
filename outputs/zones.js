@@ -997,9 +997,9 @@ window.addEventListener('load', () => {
         ship.position.y + 1.05,
         ship.position.z
       );
-      const shake = (.025 + drift * .11) * Math.sin(time * (24 + drift * 17));
+      const shake = (.006 + drift * .024) * Math.sin(time * (19 + drift * 11));
       camera.position.x += shake;
-      camera.position.y += Math.cos(time * 31) * (.018 + drift * .055);
+      camera.position.y += Math.cos(time * 23) * (.004 + drift * .012);
       camera.lookAt(cameraTarget);
       wakeGroup.position.x = ship.position.x * .62;
       wakeGroup.position.z = eased * 18.5;
