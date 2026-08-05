@@ -283,10 +283,10 @@ window.addEventListener('load', () => {
   const dockStyle = document.createElement('style');
   dockStyle.textContent = `
     .controls.compact-actions{position:fixed;z-index:45;left:12px;top:auto;bottom:12px;display:flex;gap:6px}.controls.compact-actions button{padding:8px 10px;font-size:11px}.controls.compact-actions #turn,.controls.compact-actions #view,.controls.compact-actions #title-screen{display:none}
-    .help-quick,.title-quick{display:grid;place-items:center;width:42px;height:42px;padding:0;border-radius:50%;border:2px solid #8ce8ff;background:linear-gradient(145deg,#18a9e5,#0872b8);color:#fff;font-size:27px;line-height:1;box-shadow:0 5px 15px #001c3888}
-    .help-quick,.title-quick{position:fixed;z-index:45;font-size:25px}.help-quick{right:244px;top:20px}.title-quick{display:grid;left:202px;top:14px;width:42px;padding:0;font-size:25px;border-radius:50%}
-    .ui-hidden .controls.compact-actions{display:none}.ui-hidden .title-quick{display:grid;left:8px;top:8px}.ui-hidden .help-quick{right:12px;top:12px}.ui-hidden .ui-toggle{top:62px}.ui-hidden .cargo-toggle{top:106px}
-    @media(max-width:760px){.controls.compact-actions{left:8px;bottom:8px}.help-quick{right:12px;top:62px}.ui-hidden .help-quick{top:12px}}
+    .help-quick,.title-quick,.reset-quick{display:grid;place-items:center;width:42px;height:42px;padding:0;border-radius:50%;border:2px solid #8ce8ff;background:linear-gradient(145deg,#18a9e5,#0872b8);color:#fff;font-size:27px;line-height:1;box-shadow:0 5px 15px #001c3888}
+    .help-quick,.title-quick,.reset-quick{position:fixed;z-index:45;left:202px;font-size:25px}.title-quick{top:14px}.reset-quick{top:62px}.help-quick{top:110px}.reset-quick svg{width:27px;height:27px;fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+    .ui-hidden .controls.compact-actions{display:none}.ui-hidden .title-quick{left:8px;top:8px}.ui-hidden .reset-quick{left:8px;top:56px}.ui-hidden .help-quick{left:8px;top:104px}.ui-hidden .ui-toggle{top:12px}.ui-hidden .cargo-toggle{top:56px}
+    @media(max-width:760px){.controls.compact-actions{left:8px;bottom:8px}.title-quick,.reset-quick,.help-quick{left:188px}.ui-hidden .title-quick,.ui-hidden .reset-quick,.ui-hidden .help-quick{left:8px}}
   `;
   document.head.append(dockStyle);
   const controls = document.querySelector('.controls');
@@ -296,6 +296,12 @@ window.addEventListener('load', () => {
   document.querySelector('#view').textContent = '⟳ 시점';
   document.querySelector('#title-screen').textContent = '⌂ 타이틀';
   controls.classList.add('compact-actions');
+  const resetQuick = document.querySelector('#reset-cargo');
+  resetQuick.className = 'reset-quick';
+  resetQuick.title = '적재 초기화';
+  resetQuick.setAttribute('aria-label', '적재 초기화');
+  resetQuick.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M25.5 10.5V4.5l-4 4A11 11 0 1 0 26.7 20"/><path d="M21.5 8.5h6"/></svg>';
+  document.body.append(resetQuick);
   const helpQuick = document.createElement('button');
   helpQuick.className = 'help-quick';
   helpQuick.setAttribute('aria-label', '적재 도움말');
