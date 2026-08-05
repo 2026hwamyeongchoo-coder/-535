@@ -916,6 +916,7 @@ window.addEventListener('load', () => {
     wakeGroup.visible = true;
     sprayGroup.visible = true;
     sideSprayGroup.visible = true;
+    trailGroup.visible = true;
     trailStamps.forEach((stamp) => { stamp.visible = false; stamp.material.opacity = 0; });
     document.body.classList.add('departing');
   };
@@ -987,18 +988,20 @@ window.addEventListener('load', () => {
         const strength = wake.userData.centerFoam ? .82 : .72;
         wake.material.opacity = Math.sin(progress * Math.PI) * strength;
       });
-      const sprayStrength = Math.min(1, progress * 4.2) * (1 - Math.max(0, progress - .78) / .22);
+      const yaw = ship.rotation.y;
+      const sprayStrength = Math.min(1, progress * 4.8) * (1 - Math.max(0, progress - .94) / .06);
       sprayGroup.children.forEach((spray, index) => {
         const age = (elapsed * (1.55 + (index % 5) * .08) + spray.userData.phase) % 1;
         const spread = halfBeam * (.38 + age * .58);
-        spray.position.x = ship.position.x + spray.userData.lane * spread + Math.sin(index * 2.17 + elapsed * 6) * .22;
-        spray.position.y = movingSea.position.y + .68 + Math.sin(age * Math.PI) * spray.userData.height;
-        spray.position.z = ship.position.z - halfLength * .86 - age * (4.6 + eased * 5.8);
-        const size = .13 + age * .42 + eased * .12;
-        spray.scale.set(size * 1.35, size, size * 1.8);
-        spray.material.opacity = (1 - age) * sprayStrength * .94;
+        const sternLocalX = spray.userData.lane * spread + Math.sin(index * 2.17 + elapsed * 6) * .22;
+        const sternLocalZ = -halfLength * .86 - age * (5.4 + eased * 7.2);
+        spray.position.x = ship.position.x + sternLocalX * Math.cos(yaw) + sternLocalZ * Math.sin(yaw);
+        spray.position.z = ship.position.z - sternLocalX * Math.sin(yaw) + sternLocalZ * Math.cos(yaw);
+        spray.position.y = movingSea.position.y + .68 + Math.sin(age * Math.PI) * spray.userData.height * (1.45 + drift * 1.25);
+        const size = .2 + age * .62 + eased * .16 + drift * .28;
+        spray.scale.set(size * 1.55, size * (1.2 + drift * .65), size * 2.05);
+        spray.material.opacity = (1 - age) * sprayStrength;
       });
-      const yaw = ship.rotation.y;
       sideSprayGroup.children.forEach((splash, index) => {
         const age = (elapsed * (1.75 + (index % 6) * .06) + splash.userData.phase) % 1;
         const localX = splash.userData.side * (halfBeam * (.88 + age * .18));
@@ -1024,8 +1027,8 @@ window.addEventListener('load', () => {
         );
         stamp.rotation.z = routeDrift * .92;
         stamp.scale.set(1 + routeDrift * .65, 1 + eased * .34, 1);
-        const trailAge = Math.max(0, progress - routeT);
-        stamp.material.opacity = Math.max(.22, .76 - trailAge * .62);
+        const trailAgeSeconds = Math.max(0, elapsed - routeT * 5.35);
+        stamp.material.opacity = Math.max(0, .84 - trailAgeSeconds * .52);
       });
       waterUniforms.uTime.value = time * (1 + eased * .55);
       if (progress >= 1) {
@@ -1034,6 +1037,7 @@ window.addEventListener('load', () => {
         wakeGroup.visible = false;
         sprayGroup.visible = false;
         sideSprayGroup.visible = false;
+        trailGroup.visible = false;
         document.body.classList.remove('departing');
         complete();
       }
