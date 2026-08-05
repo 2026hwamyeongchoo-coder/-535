@@ -816,6 +816,36 @@ window.addEventListener('load', () => {
   movingSea.receiveShadow = true;
   scene.add(movingSea);
 
+  // Completion departure: a widening pair of foam trails stays on the water
+  // while the loaded ship accelerates bow-first into its new voyage.
+  const wakeGroup = new T.Group();
+  wakeGroup.visible = false;
+  const wakeMaterial = new T.MeshBasicMaterial({
+    color: 0xdaf7ff, transparent: true, opacity: 0, depthWrite: false,
+    side: T.DoubleSide, blending: T.AdditiveBlending
+  });
+  [-1, 1].forEach((side) => {
+    const wakeShape = new T.Shape();
+    wakeShape.moveTo(side * .25, 0);
+    wakeShape.lineTo(side * (halfBeam * .86), -14);
+    wakeShape.lineTo(side * (halfBeam * .43), -14);
+    wakeShape.lineTo(side * .08, 0);
+    wakeShape.closePath();
+    const wake = new T.Mesh(new T.ShapeGeometry(wakeShape), wakeMaterial.clone());
+    wake.rotation.x = Math.PI / 2;
+    wake.position.set(0, movingSea.position.y + .72, -halfLength * .84);
+    wake.renderOrder = 4;
+    wakeGroup.add(wake);
+  });
+  scene.add(wakeGroup);
+  let departure = null;
+  window.playDeparture = (complete) => {
+    if (departure) return;
+    departure = { started: performance.now() * .001, complete, originZ: ship.position.z };
+    wakeGroup.visible = true;
+    document.body.classList.add('departing');
+  };
+
   // High-resolution 360-degree sky: a pale marine horizon, deep zenith and
   // soft layered clouds. It remains fixed in world space while the camera
   // orbits, avoiding the old disconnect between a rotating floor and sky.
@@ -861,7 +891,25 @@ window.addEventListener('load', () => {
   animate = function animateWithWorldMotion() {
     requestAnimationFrame(animateWithWorldMotion);
     const time = clock.getElapsedTime();
-    if (!ended) {
+    if (departure) {
+      const elapsed = performance.now() * .001 - departure.started;
+      const progress = Math.min(1, elapsed / 3.35);
+      const eased = progress * progress * (3 - 2 * progress);
+      ship.position.z = departure.originZ + eased * Math.max(28, D * S * 1.42);
+      ship.position.y = Math.sin(time * 1.45) * .055 + eased * .16;
+      ship.rotation.x = -.012 - eased * .018;
+      ship.rotation.z = Math.sin(time * .82) * .005 * (1 - progress);
+      wakeGroup.position.z = eased * 8.5;
+      wakeGroup.scale.set(1 + eased * .48, 1 + eased * .9, 1);
+      wakeGroup.children.forEach((wake) => { wake.material.opacity = Math.sin(progress * Math.PI) * .58; });
+      waterUniforms.uTime.value = time * (1 + eased * .55);
+      if (progress >= 1) {
+        const complete = departure.complete;
+        departure = null;
+        document.body.classList.remove('departing');
+        complete();
+      }
+    } else if (!ended) {
       const heave = Math.sin(time * .72) * .045 + Math.sin(time * 1.27) * .015;
       const roll = Math.sin(time * .58) * .009;
       const pitch = Math.sin(time * .43 + .8) * .006;
