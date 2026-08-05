@@ -984,16 +984,22 @@ window.addEventListener('load', () => {
       ship.rotation.x = -.012 - eased * .018;
       ship.rotation.y = -drift * 1.02;
       ship.rotation.z = Math.sin(time * .82) * .006 * (1 - progress) + drift * .078;
-      const forward = new T.Vector3(Math.sin(ship.rotation.y), 0, Math.cos(ship.rotation.y));
-      const cameraTarget = ship.position.clone().add(forward.clone().multiplyScalar(6.5));
-      cameraTarget.y = 1.2;
-      const chasePosition = ship.position.clone().add(forward.clone().multiplyScalar(-25));
-      chasePosition.y += 10.5 - drift * 2.2;
-      const chaseBlend = Math.min(1, progress * 4.5) * .085;
-      camera.position.lerp(chasePosition, chaseBlend);
-      const shake = (.035 + drift * .22) * Math.sin(time * (24 + drift * 17));
+      // The camera only pans a fraction of the route. The ship therefore
+      // crosses the frame and visibly shrinks into the distance instead of
+      // staying locked at a constant chase-camera size.
+      const cameraBase = departure.cameraStart.clone();
+      cameraBase.x -= drift * 3.8;
+      cameraBase.y += eased * 2.2;
+      cameraBase.z += eased * 6.5;
+      camera.position.lerp(cameraBase, .075);
+      const cameraTarget = new T.Vector3(
+        ship.position.x * .24,
+        .8 + ship.position.y * .18,
+        ship.position.z * .23
+      );
+      const shake = (.025 + drift * .11) * Math.sin(time * (24 + drift * 17));
       camera.position.x += shake;
-      camera.position.y += Math.cos(time * 31) * (.025 + drift * .11);
+      camera.position.y += Math.cos(time * 31) * (.018 + drift * .055);
       camera.lookAt(cameraTarget);
       wakeGroup.position.x = ship.position.x * .62;
       wakeGroup.position.z = eased * 18.5;
