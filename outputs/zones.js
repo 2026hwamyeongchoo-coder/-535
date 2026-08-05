@@ -993,9 +993,9 @@ window.addEventListener('load', () => {
       cameraBase.z += eased * 6.5;
       camera.position.lerp(cameraBase, .075);
       const cameraTarget = new T.Vector3(
-        ship.position.x * .24,
-        .8 + ship.position.y * .18,
-        ship.position.z * .23
+        ship.position.x,
+        ship.position.y + 1.05,
+        ship.position.z
       );
       const shake = (.025 + drift * .11) * Math.sin(time * (24 + drift * 17));
       camera.position.x += shake;
