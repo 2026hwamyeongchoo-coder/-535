@@ -282,11 +282,12 @@ window.addEventListener('load', () => {
   const dockStyle = document.createElement('style');
   dockStyle.textContent = `
     .controls.control-dock{position:fixed;z-index:45;left:202px;top:14px;bottom:auto;display:block}
-    .control-dock-toggle,.help-quick{display:grid;place-items:center;width:42px;height:42px;padding:0;border-radius:50%;border:2px solid #8ce8ff;background:linear-gradient(145deg,#18a9e5,#0872b8);color:#fff;font-size:27px;line-height:1;box-shadow:0 5px 15px #001c3888}
+    .control-dock-toggle,.help-quick,.title-quick{display:grid;place-items:center;width:42px;height:42px;padding:0;border-radius:50%;border:2px solid #8ce8ff;background:linear-gradient(145deg,#18a9e5,#0872b8);color:#fff;font-size:27px;line-height:1;box-shadow:0 5px 15px #001c3888}
     .control-dock-toggle{font-size:24px}.control-dock-actions{display:none;position:absolute;top:49px;left:0;width:148px;padding:7px;background:#061d2df2;border:1px solid #77d5e7;border-radius:10px;box-shadow:0 10px 25px #0009;gap:5px}
     .control-dock.open .control-dock-actions{display:grid}.control-dock-actions button{width:100%;padding:8px 7px;font-size:11px;text-align:left}.control-dock-actions #ui-toggle{position:static;display:block!important;width:100%;border:0;border-radius:7px;background:#126b93;color:#fff;font:inherit;font-weight:800;box-shadow:none}
-    .help-quick{position:fixed;z-index:45;right:244px;top:20px;font-size:25px}
-    @media(max-width:760px){.controls.control-dock{left:12px;top:12px}.help-quick{right:12px;top:62px}}
+    .help-quick,.title-quick{position:fixed;z-index:45;font-size:25px}.help-quick{right:244px;top:20px}.title-quick{display:none;left:12px;top:12px}
+    .ui-hidden .controls.control-dock{display:none}.ui-hidden .title-quick{display:grid}.ui-hidden .help-quick{right:12px;top:12px}.ui-hidden .ui-toggle{top:62px}.ui-hidden .cargo-toggle{top:106px}
+    @media(max-width:760px){.controls.control-dock{left:12px;top:12px}.help-quick{right:12px;top:62px}.ui-hidden .help-quick{top:12px}}
   `;
   document.head.append(dockStyle);
   const controls = document.querySelector('.controls');
@@ -308,6 +309,13 @@ window.addEventListener('load', () => {
   helpQuick.textContent = '?';
   helpQuick.onclick = () => helpBackdrop.classList.add('open');
   document.body.append(helpQuick);
+  const titleQuick = document.createElement('button');
+  titleQuick.className = 'title-quick';
+  titleQuick.setAttribute('aria-label', '타이틀 화면으로 돌아가기');
+  titleQuick.title = '타이틀 화면으로 돌아가기';
+  titleQuick.textContent = '⌂';
+  titleQuick.onclick = () => location.href = 'index.html';
+  document.body.append(titleQuick);
 
   // Pick against the actual active loading surface. The former fixed sea-level
   // plane made a click on a visible container land in a different cell when
