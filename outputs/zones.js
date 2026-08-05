@@ -221,6 +221,7 @@ window.addEventListener('load', () => {
   const restartButton = document.querySelector('#again');
   restartButton.textContent = '새 항차 시작';
   const titleButton = document.createElement('button');
+  titleButton.id = 'modal-title-button';
   titleButton.textContent = '타이틀 화면';
   titleButton.style.marginLeft = '8px';
   titleButton.onclick = () => { location.href = 'index.html'; };
