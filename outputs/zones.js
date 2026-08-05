@@ -149,11 +149,14 @@ window.addEventListener('load', () => {
         const nextIndex = remainingIndexes[0];
         chosen = chosen === nextIndex ? null : nextIndex;
         manifest[nextIndex].dir = dir;
-        if (chosen !== null && item.t === 'flat' && loadArea !== 'deck') {
+        const hasHoldFlatRackZone = [...MANUAL_ZONES].some(([zoneKey, zoneType]) => zoneType === 'flat' && zoneKey.startsWith('hold:'));
+        if (chosen !== null && item.t === 'flat' && loadArea !== 'deck' && !hasHoldFlatRackZone) {
           loadArea = 'deck';
           areaButton.textContent = '적재 위치: 상갑판';
           updateDeckTransparency();
           toast('플랫랙은 상갑판에만 적재합니다');
+        } else if (chosen !== null && item.t === 'flat' && loadArea === 'hold' && hasHoldFlatRackZone) {
+          toast('선창의 FLAT RACK 전용 구역에 배치하세요');
         }
         renderCards();
         toast(chosen === null ? '화물 선택 해제' : `${item.id} 적재 위치를 클릭하세요`);
@@ -272,7 +275,8 @@ window.addEventListener('load', () => {
       button.onclick = () => {
         chosen = available[0];
         manifest[chosen].dir = dir;
-        if (group.item.t === 'flat' && loadArea !== 'deck') { loadArea = 'deck'; areaButton.textContent = '적재 위치: 상갑판'; updateDeckTransparency(); }
+        const hasHoldFlatRackZone = [...MANUAL_ZONES].some(([zoneKey, zoneType]) => zoneType === 'flat' && zoneKey.startsWith('hold:'));
+        if (group.item.t === 'flat' && loadArea !== 'deck' && !hasHoldFlatRackZone) { loadArea = 'deck'; areaButton.textContent = '적재 위치: 상갑판'; updateDeckTransparency(); }
         quickCargo.classList.remove('open');
         renderCards();
         toast(`${group.item.id} 적재 위치를 클릭하세요`);
