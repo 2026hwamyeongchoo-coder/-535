@@ -866,7 +866,7 @@ window.addEventListener('load', () => {
   let departure = null;
   window.playDeparture = (complete) => {
     if (departure) return;
-    departure = { started: performance.now() * .001, complete, originZ: ship.position.z };
+    departure = { started: performance.now() * .001, complete, originX: ship.position.x, originZ: ship.position.z };
     wakeGroup.visible = true;
     sprayGroup.visible = true;
     document.body.classList.add('departing');
@@ -919,13 +919,21 @@ window.addEventListener('load', () => {
     const time = clock.getElapsedTime();
     if (departure) {
       const elapsed = performance.now() * .001 - departure.started;
-      const progress = Math.min(1, elapsed / 3.35);
+      const progress = Math.min(1, elapsed / 4.65);
       const eased = progress * progress * (3 - 2 * progress);
-      ship.position.z = departure.originZ + eased * Math.max(28, D * S * 1.42);
+      const driftProgress = Math.max(0, Math.min(1, (progress - .46) / .54));
+      const drift = driftProgress * driftProgress * (3 - 2 * driftProgress);
+      const forwardDistance = Math.max(52, D * S * 2.45);
+      const leftDistance = Math.max(14, W * S * 1.55);
+      ship.position.z = departure.originZ + eased * forwardDistance;
+      ship.position.x = departure.originX - drift * leftDistance;
       ship.position.y = Math.sin(time * 1.45) * .055 + eased * .16;
       ship.rotation.x = -.012 - eased * .018;
-      ship.rotation.z = Math.sin(time * .82) * .005 * (1 - progress);
-      wakeGroup.position.z = eased * 8.5;
+      ship.rotation.y = -drift * .48;
+      ship.rotation.z = Math.sin(time * .82) * .005 * (1 - progress) + drift * .032;
+      wakeGroup.position.x = ship.position.x * .42;
+      wakeGroup.position.z = eased * 13.5;
+      wakeGroup.rotation.y = -drift * .19;
       wakeGroup.scale.set(1 + eased * .48, 1 + eased * .9, 1);
       wakeGroup.children.forEach((wake) => {
         const strength = wake.userData.centerFoam ? .82 : .72;
@@ -935,7 +943,7 @@ window.addEventListener('load', () => {
       sprayGroup.children.forEach((spray, index) => {
         const age = (elapsed * (1.55 + (index % 5) * .08) + spray.userData.phase) % 1;
         const spread = halfBeam * (.38 + age * .58);
-        spray.position.x = spray.userData.lane * spread + Math.sin(index * 2.17 + elapsed * 6) * .22;
+        spray.position.x = ship.position.x + spray.userData.lane * spread + Math.sin(index * 2.17 + elapsed * 6) * .22;
         spray.position.y = movingSea.position.y + .68 + Math.sin(age * Math.PI) * spray.userData.height;
         spray.position.z = ship.position.z - halfLength * .86 - age * (4.6 + eased * 5.8);
         const size = .13 + age * .42 + eased * .12;
