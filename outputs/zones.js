@@ -850,15 +850,15 @@ window.addEventListener('load', () => {
   const sprayGroup = new T.Group();
   sprayGroup.visible = false;
   const sprayGeometry = new T.SphereGeometry(1, 12, 8);
-  for (let i = 0; i < 30; i += 1) {
+  for (let i = 0; i < 78; i += 1) {
     const spray = new T.Mesh(sprayGeometry, new T.MeshBasicMaterial({
       color: i % 4 === 0 ? 0xffffff : 0xcff5ff,
       transparent: true, opacity: 0, depthWrite: false,
       blending: T.AdditiveBlending
     }));
-    spray.userData.phase = i / 30;
+    spray.userData.phase = i / 78;
     spray.userData.lane = i % 2 ? -1 : 1;
-    spray.userData.height = .78 + (i % 7) * .105;
+    spray.userData.height = 1.1 + (i % 9) * .19;
     spray.renderOrder = 6;
     sprayGroup.add(spray);
   }
@@ -912,7 +912,11 @@ window.addEventListener('load', () => {
   let departure = null;
   window.playDeparture = (complete) => {
     if (departure) return;
-    departure = { started: performance.now() * .001, complete, originX: ship.position.x, originZ: ship.position.z };
+    departure = {
+      started: performance.now() * .001, complete,
+      originX: ship.position.x, originZ: ship.position.z,
+      cameraStart: camera.position.clone()
+    };
     wakeGroup.visible = true;
     sprayGroup.visible = true;
     sideSprayGroup.visible = true;
@@ -980,6 +984,17 @@ window.addEventListener('load', () => {
       ship.rotation.x = -.012 - eased * .018;
       ship.rotation.y = -drift * 1.02;
       ship.rotation.z = Math.sin(time * .82) * .006 * (1 - progress) + drift * .078;
+      const forward = new T.Vector3(Math.sin(ship.rotation.y), 0, Math.cos(ship.rotation.y));
+      const cameraTarget = ship.position.clone().add(forward.clone().multiplyScalar(6.5));
+      cameraTarget.y = 1.2;
+      const chasePosition = ship.position.clone().add(forward.clone().multiplyScalar(-25));
+      chasePosition.y += 10.5 - drift * 2.2;
+      const chaseBlend = Math.min(1, progress * 4.5) * .085;
+      camera.position.lerp(chasePosition, chaseBlend);
+      const shake = (.035 + drift * .22) * Math.sin(time * (24 + drift * 17));
+      camera.position.x += shake;
+      camera.position.y += Math.cos(time * 31) * (.025 + drift * .11);
+      camera.lookAt(cameraTarget);
       wakeGroup.position.x = ship.position.x * .62;
       wakeGroup.position.z = eased * 18.5;
       wakeGroup.rotation.y = -drift * .52;
@@ -997,10 +1012,10 @@ window.addEventListener('load', () => {
         const sternLocalZ = -halfLength * .86 - age * (5.4 + eased * 7.2);
         spray.position.x = ship.position.x + sternLocalX * Math.cos(yaw) + sternLocalZ * Math.sin(yaw);
         spray.position.z = ship.position.z - sternLocalX * Math.sin(yaw) + sternLocalZ * Math.cos(yaw);
-        spray.position.y = movingSea.position.y + .68 + Math.sin(age * Math.PI) * spray.userData.height * (1.45 + drift * 1.25);
-        const size = .2 + age * .62 + eased * .16 + drift * .28;
-        spray.scale.set(size * 1.55, size * (1.2 + drift * .65), size * 2.05);
-        spray.material.opacity = (1 - age) * sprayStrength;
+        spray.position.y = movingSea.position.y + .7 + Math.sin(age * Math.PI) * spray.userData.height * (1.85 + drift * 1.75);
+        const size = .36 + age * 1.08 + eased * .25 + drift * .55;
+        spray.scale.set(size * 1.8, size * (1.45 + drift * .95), size * 2.45);
+        spray.material.opacity = (1 - age) * sprayStrength * .96;
       });
       sideSprayGroup.children.forEach((splash, index) => {
         const age = (elapsed * (1.75 + (index % 6) * .06) + splash.userData.phase) % 1;
