@@ -20,13 +20,13 @@ window.addEventListener('load', () => {
   const hullSteel = new T.MeshStandardMaterial({ color: 0x7d211c, roughness: 0.43, metalness: 0.32 });
   const deckSteel = new T.MeshStandardMaterial({ color: 0x536b73, roughness: 0.5, metalness: 0.48 });
   const whiteSteel = new T.MeshStandardMaterial({ color: 0xd6e2e3, roughness: 0.42, metalness: 0.45 });
-  cleanAdd(new T.BoxGeometry(W * S + 1.0, .46, D * S - 1.2), hullSteel, [0, -2.38, -1.0]);
-  [-1, 1].forEach((side) => cleanAdd(new T.BoxGeometry(.5, 2.75, D * S - 1.2), hullSteel, [side * (W * S / 2 + .25), -1.0, -1.0]));
-  cleanAdd(new T.BoxGeometry(W * S + .5, 2.7, .5), hullSteel, [0, -1.0, -11.28]);
+  cleanAdd(new T.BoxGeometry(W * S + 1.0, .46, D * S - 1.2), hullSteel, [0, -3.48, -1.0]);
+  [-1, 1].forEach((side) => cleanAdd(new T.BoxGeometry(.5, 3.9, D * S - 1.2), hullSteel, [side * (W * S / 2 + .25), -1.4, -1.0]));
+  cleanAdd(new T.BoxGeometry(W * S + .5, 3.9, .5), hullSteel, [0, -1.4, -11.28]);
   const sharpBow = new T.BufferGeometry();
   sharpBow.setAttribute('position', new T.BufferAttribute(new Float32Array([
-    -4.75,.36,-1.35, 4.75,.36,-1.35, -4.55,-2.38,-1.35, 4.55,-2.38,-1.35,
-    -.42,.26,2.18, .42,.26,2.18, -.16,-1.66,2.18, .16,-1.66,2.18
+    -4.75,.36,-1.35, 4.75,.36,-1.35, -4.55,-3.48,-1.35, 4.55,-3.48,-1.35,
+    -.42,.26,2.18, .42,.26,2.18, -.16,-2.14,2.18, .16,-2.14,2.18
   ]), 3));
   sharpBow.setIndex([0,1,5,0,5,4, 0,4,6,0,6,2, 1,3,7,1,7,5, 2,6,7,2,7,3, 4,5,7,4,7,6, 0,2,3,0,3,1]);
   sharpBow.computeVertexNormals();
@@ -75,12 +75,12 @@ window.addEventListener('load', () => {
 
   function addZone(x, z, w, d, color, label, onDeck = false) {
     const tile = new T.Mesh(new T.BoxGeometry(w * S - 0.12, 0.035, d * S - 0.12), new T.MeshStandardMaterial({ color, transparent: true, opacity: 0.62, emissive: color, emissiveIntensity: 0.25 }));
-    tile.position.set((x - (W - 1) / 2 + (w - 1) / 2) * S, onDeck ? 0.61 : -1.62, (z - (D - 1) / 2 + (d - 1) / 2) * S);
+    tile.position.set((x - (W - 1) / 2 + (w - 1) / 2) * S, onDeck ? 0.61 : -2.82, (z - (D - 1) / 2 + (d - 1) / 2) * S);
     ship.add(tile);
     const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
     const context = canvas.getContext('2d'); context.fillStyle = '#ffffff'; context.font = 'bold 24px sans-serif'; context.textAlign = 'center'; context.fillText(label, 128, 39);
     const marker = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(canvas), transparent: true }));
-    marker.position.copy(tile.position); marker.position.y = onDeck ? 0.82 : -1.05; marker.scale.set(1.6, 0.4, 1); ship.add(marker);
+    marker.position.copy(tile.position); marker.position.y = onDeck ? 0.82 : -2.25; marker.scale.set(1.6, 0.4, 1); ship.add(marker);
   }
   addZone(0, 2, 2, 1, 0xe69b27, 'FLAT RACK', true);
   addZone(1, 3, 1, 1, 0x1689e1, 'REEFER ⚡');
@@ -285,7 +285,7 @@ window.addEventListener('load', () => {
     pointer.x = (event.clientX - rect.left) / rect.width * 2 - 1;
     pointer.y = -(event.clientY - rect.top) / rect.height * 2 + 1;
     ray.setFromCamera(pointer, camera);
-    const surfaceY = loadArea === 'deck' ? 0.60 : -1.62;
+    const surfaceY = loadArea === 'deck' ? 0.60 : -2.82;
     const loadingPlane = new T.Plane(new T.Vector3(0, 1, 0), -surfaceY);
     const point = new T.Vector3();
     ray.ray.intersectPlane(loadingPlane, point);
@@ -388,7 +388,7 @@ window.addEventListener('load', () => {
   const containerHeight = (item) => item.id.includes('HC') ? 1.5 : 1.1;
   const stackBase = (item, x, z, y) => {
     if ((item._onDeck || loadArea === 'deck') && y === 2) return 0.60;
-    if (y === 0) return isDeckFootprint(item, x, z) ? 0.60 : -1.62;
+    if (y === 0) return isDeckFootprint(item, x, z) ? 0.60 : -2.82;
     const supports = cells(item, x, z).map(([a, b]) => board[a][b][y - 1]);
     return Math.max(...supports.map((support) => support.item._stackBase + containerHeight(support.item)));
   };
@@ -409,7 +409,7 @@ window.addEventListener('load', () => {
       const line = new T.BufferGeometry().setFromPoints([new T.Vector3(column * width / 10, -height * 0.42, depth / 2 + 0.004), new T.Vector3(column * width / 10, height * 0.42, depth / 2 + 0.004)]);
       group.add(new T.Line(line, grooves));
     }
-    const base = item._stackBase ?? (-1.62 + y * levelStep);
+    const base = item._stackBase ?? (-2.82 + y * levelStep);
     group.position.set((x - (W - 1) / 2 + (item.dir === 'x' ? (length - 1) / 2 : 0)) * S, base + height / 2, (z - (D - 1) / 2 + (item.dir === 'z' ? (length - 1) / 2 : 0)) * S);
     if (item._onDeck) group.traverse((part) => { part.userData.deckCargo = true; });
     ship.add(group);
@@ -469,14 +469,14 @@ window.addEventListener('load', () => {
   };
   const holdCenters = [-6.2, 0, 6.2];
   holdCenters.forEach((z) => {
-    addPart(new T.BoxGeometry(W * S - 1.1, 0.1, 5.25), steel, [0, -1.72, z]);
-    addPart(new T.BoxGeometry(0.18, 2.25, 5.35), innerWall, [-W * S / 2 + 0.4, -0.6, z]);
-    addPart(new T.BoxGeometry(0.18, 2.25, 5.35), innerWall, [W * S / 2 - 0.4, -0.6, z]);
-    addPart(new T.BoxGeometry(W * S - 0.9, 2.25, 0.18), innerWall, [0, -0.6, z - 2.6]);
-    addPart(new T.BoxGeometry(W * S - 0.9, 2.25, 0.18), innerWall, [0, -0.6, z + 2.6]);
+    addPart(new T.BoxGeometry(W * S - 1.1, 0.1, 5.25), steel, [0, -2.92, z]);
+    addPart(new T.BoxGeometry(0.18, 3.45, 5.35), innerWall, [-W * S / 2 + 0.4, -1.2, z]);
+    addPart(new T.BoxGeometry(0.18, 3.45, 5.35), innerWall, [W * S / 2 - 0.4, -1.2, z]);
+    addPart(new T.BoxGeometry(W * S - 0.9, 3.45, 0.18), innerWall, [0, -1.2, z - 2.6]);
+    addPart(new T.BoxGeometry(W * S - 0.9, 3.45, 0.18), innerWall, [0, -1.2, z + 2.6]);
   });
   // One continuous hold floor prevents visual gaps between cargo bays.
-  addPart(new T.BoxGeometry(W * S - 1.1, 0.1, D * S - 1.0), steel, [0, -1.72, 0]);
+  addPart(new T.BoxGeometry(W * S - 1.1, 0.1, D * S - 1.0), steel, [0, -2.92, 0]);
   // A real deck surrounds the hatch openings.  Only the three hatch mouths
   // remain open so the below-deck cargo holds can still be seen and loaded.
   const deckSurface = new T.MeshStandardMaterial({ color: 0x3d555d, roughness: 0.5, metalness: 0.52 });
@@ -514,7 +514,7 @@ window.addEventListener('load', () => {
       new T.EdgesGeometry(new T.BoxGeometry(W * S - 0.85, 0.01, D * S - 0.85)),
       new T.LineBasicMaterial({ color: 0x7ee7df, transparent: true, opacity: 0.28 })
     );
-    guide.position.y = -1.62 + level * levelStep;
+    guide.position.y = -2.82 + level * levelStep;
     ship.add(guide);
   }
 
@@ -544,7 +544,7 @@ window.addEventListener('load', () => {
     new T.MeshStandardMaterial({ map: waveTexture, color: 0x176b82, roughness: .56, metalness: .24 })
   );
   movingSea.rotation.x = -Math.PI / 2;
-  movingSea.position.y = -2.64;
+  movingSea.position.y = -3.74;
   movingSea.receiveShadow = true;
   scene.add(movingSea);
 
