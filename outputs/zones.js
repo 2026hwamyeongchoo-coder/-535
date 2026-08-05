@@ -837,12 +837,38 @@ window.addEventListener('load', () => {
     wake.renderOrder = 4;
     wakeGroup.add(wake);
   });
+  const centerFoam = new T.Mesh(
+    new T.PlaneGeometry(Math.max(1.8, halfBeam * .7), 18, 1, 8),
+    wakeMaterial.clone()
+  );
+  centerFoam.rotation.x = -Math.PI / 2;
+  centerFoam.position.set(0, movingSea.position.y + .75, -halfLength * .84 - 8.4);
+  centerFoam.renderOrder = 5;
+  centerFoam.userData.centerFoam = true;
+  wakeGroup.add(centerFoam);
   scene.add(wakeGroup);
+  const sprayGroup = new T.Group();
+  sprayGroup.visible = false;
+  const sprayGeometry = new T.SphereGeometry(1, 12, 8);
+  for (let i = 0; i < 30; i += 1) {
+    const spray = new T.Mesh(sprayGeometry, new T.MeshBasicMaterial({
+      color: i % 4 === 0 ? 0xffffff : 0xcff5ff,
+      transparent: true, opacity: 0, depthWrite: false,
+      blending: T.AdditiveBlending
+    }));
+    spray.userData.phase = i / 30;
+    spray.userData.lane = i % 2 ? -1 : 1;
+    spray.userData.height = .78 + (i % 7) * .105;
+    spray.renderOrder = 6;
+    sprayGroup.add(spray);
+  }
+  scene.add(sprayGroup);
   let departure = null;
   window.playDeparture = (complete) => {
     if (departure) return;
     departure = { started: performance.now() * .001, complete, originZ: ship.position.z };
     wakeGroup.visible = true;
+    sprayGroup.visible = true;
     document.body.classList.add('departing');
   };
 
@@ -901,11 +927,27 @@ window.addEventListener('load', () => {
       ship.rotation.z = Math.sin(time * .82) * .005 * (1 - progress);
       wakeGroup.position.z = eased * 8.5;
       wakeGroup.scale.set(1 + eased * .48, 1 + eased * .9, 1);
-      wakeGroup.children.forEach((wake) => { wake.material.opacity = Math.sin(progress * Math.PI) * .58; });
+      wakeGroup.children.forEach((wake) => {
+        const strength = wake.userData.centerFoam ? .82 : .72;
+        wake.material.opacity = Math.sin(progress * Math.PI) * strength;
+      });
+      const sprayStrength = Math.min(1, progress * 4.2) * (1 - Math.max(0, progress - .78) / .22);
+      sprayGroup.children.forEach((spray, index) => {
+        const age = (elapsed * (1.55 + (index % 5) * .08) + spray.userData.phase) % 1;
+        const spread = halfBeam * (.38 + age * .58);
+        spray.position.x = spray.userData.lane * spread + Math.sin(index * 2.17 + elapsed * 6) * .22;
+        spray.position.y = movingSea.position.y + .68 + Math.sin(age * Math.PI) * spray.userData.height;
+        spray.position.z = ship.position.z - halfLength * .86 - age * (4.6 + eased * 5.8);
+        const size = .13 + age * .42 + eased * .12;
+        spray.scale.set(size * 1.35, size, size * 1.8);
+        spray.material.opacity = (1 - age) * sprayStrength * .94;
+      });
       waterUniforms.uTime.value = time * (1 + eased * .55);
       if (progress >= 1) {
         const complete = departure.complete;
         departure = null;
+        wakeGroup.visible = false;
+        sprayGroup.visible = false;
         document.body.classList.remove('departing');
         complete();
       }
