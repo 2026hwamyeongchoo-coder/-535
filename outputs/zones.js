@@ -341,8 +341,8 @@ window.addEventListener('load', () => {
   update = function updateWithSofterBalance() {
     baseUpdate();
     const offset = cg();
-    document.querySelector('#meter').style.transform = `translateX(${offset * 18}px)`;
-    document.querySelector('#balance').textContent = Math.abs(offset) < 1.0 ? '안정' : Math.abs(offset) < 1.9 ? '주의' : '위험';
+    document.querySelector('#meter').style.transform = `translateX(${offset * 30}px)`;
+    document.querySelector('#balance').textContent = Math.abs(offset) < 0.55 ? '안정' : Math.abs(offset) < 1.15 ? '주의' : '위험';
   };
   update();
 
