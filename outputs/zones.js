@@ -701,19 +701,15 @@ window.addEventListener('load', () => {
   const waveTexture = new T.CanvasTexture(waveCanvas);
   waveTexture.wrapS = waveTexture.wrapT = T.RepeatWrapping;
   waveTexture.repeat.set(10, 10);
-  // The ocean must not pass through deep cargo holds. Build it as a large
-  // surface with a ship-shaped opening instead of one plane beneath the hull.
-  const seaShape = new T.Shape();
-  seaShape.moveTo(-90, -90); seaShape.lineTo(90, -90); seaShape.lineTo(90, 90); seaShape.lineTo(-90, 90); seaShape.closePath();
-  const waterOpening = new T.Path(), openingHalfWidth = W * S / 2 + 2.1, openingHalfLength = D * S / 2 + 2.7;
-  waterOpening.moveTo(-openingHalfWidth, -openingHalfLength); waterOpening.lineTo(-openingHalfWidth, openingHalfLength); waterOpening.lineTo(openingHalfWidth, openingHalfLength); waterOpening.lineTo(openingHalfWidth, -openingHalfLength); waterOpening.closePath();
-  seaShape.holes.push(waterOpening);
+  // Keep one continuous ocean surface below the deepest hold floor. The old
+  // rectangular opening exposed the sky background below the hull and looked
+  // like a large white plate from low camera angles.
   const movingSea = new T.Mesh(
-    new T.ShapeGeometry(seaShape),
+    new T.PlaneGeometry(180, 180),
     new T.MeshStandardMaterial({ map: waveTexture, color: 0x176b82, roughness: .56, metalness: .24, side: T.DoubleSide })
   );
   movingSea.rotation.x = -Math.PI / 2;
-  movingSea.position.y = -3.74;
+  movingSea.position.y = Math.min(-3.74, holdFloorY - .65);
   movingSea.receiveShadow = true;
   scene.add(movingSea);
 
