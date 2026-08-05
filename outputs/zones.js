@@ -967,22 +967,38 @@ window.addEventListener('load', () => {
     harborTexture.repeat.set(1.04, 1.04);
   }
 
+  const departureRoute = (routeProgress, originX, originZ) => {
+    const straightEnd = .27;
+    const straightRatio = Math.min(1, routeProgress / straightEnd);
+    const straightEase = straightRatio * straightRatio * (3 - 2 * straightRatio);
+    const turnRatio = Math.max(0, Math.min(1, (routeProgress - straightEnd) / (1 - straightEnd)));
+    const turn = turnRatio * turnRatio * (3 - 2 * turnRatio);
+    const angle = turn * Math.PI * .92;
+    const straightDistance = Math.max(21, D * S * .92);
+    const radius = Math.max(27, D * S * 1.22);
+    return {
+      x: originX - radius + radius * Math.cos(angle),
+      z: originZ + straightEase * straightDistance + radius * Math.sin(angle),
+      yaw: -angle,
+      turn,
+      ease: routeProgress * routeProgress * (3 - 2 * routeProgress)
+    };
+  };
+
   animate = function animateWithWorldMotion() {
     requestAnimationFrame(animateWithWorldMotion);
     const time = clock.getElapsedTime();
     if (departure) {
       const elapsed = performance.now() * .001 - departure.started;
-      const progress = Math.min(1, elapsed / 5.35);
-      const eased = progress * progress * (3 - 2 * progress);
-      const driftProgress = Math.max(0, Math.min(1, (progress - .32) / .68));
-      const drift = driftProgress * driftProgress * (3 - 2 * driftProgress);
-      const forwardDistance = Math.max(70, D * S * 3.1);
-      const leftDistance = Math.max(27, W * S * 2.8);
-      ship.position.z = departure.originZ + eased * forwardDistance;
-      ship.position.x = departure.originX - drift * leftDistance;
+      const progress = Math.min(1, elapsed / 6.25);
+      const route = departureRoute(progress, departure.originX, departure.originZ);
+      const eased = route.ease;
+      const drift = route.turn;
+      ship.position.z = route.z;
+      ship.position.x = route.x;
       ship.position.y = Math.sin(time * 1.45) * .055 + eased * .16;
       ship.rotation.x = -.012 - eased * .018;
-      ship.rotation.y = -drift * 1.02;
+      ship.rotation.y = route.yaw;
       ship.rotation.z = Math.sin(time * .82) * .006 * (1 - progress) + drift * .078;
       // The camera only pans a fraction of the route. The ship therefore
       // crosses the frame and visibly shrinks into the distance instead of
@@ -1001,9 +1017,9 @@ window.addEventListener('load', () => {
       camera.position.x += shake;
       camera.position.y += Math.cos(time * 23) * (.004 + drift * .012);
       camera.lookAt(cameraTarget);
-      wakeGroup.position.x = ship.position.x * .62;
-      wakeGroup.position.z = eased * 18.5;
-      wakeGroup.rotation.y = -drift * .52;
+      wakeGroup.position.x = ship.position.x;
+      wakeGroup.position.z = ship.position.z;
+      wakeGroup.rotation.y = route.yaw;
       wakeGroup.scale.set(1 + eased * .48, 1 + eased * .9, 1);
       wakeGroup.children.forEach((wake) => {
         const strength = wake.userData.centerFoam ? .82 : .72;
@@ -1037,18 +1053,17 @@ window.addEventListener('load', () => {
       trailStamps.forEach((stamp, index) => {
         const routeT = index / (trailStamps.length - 1);
         if (routeT > progress) return;
-        const routeEase = routeT * routeT * (3 - 2 * routeT);
-        const routeDriftProgress = Math.max(0, Math.min(1, (routeT - .32) / .68));
-        const routeDrift = routeDriftProgress * routeDriftProgress * (3 - 2 * routeDriftProgress);
+        const stampRoute = departureRoute(routeT, departure.originX, departure.originZ);
         stamp.visible = true;
         stamp.position.set(
-          departure.originX - routeDrift * leftDistance,
+          stampRoute.x,
           movingSea.position.y + .76,
-          departure.originZ + routeEase * forwardDistance - halfLength * .78
+          stampRoute.z - Math.cos(stampRoute.yaw) * halfLength * .78
         );
-        stamp.rotation.z = routeDrift * .92;
-        stamp.scale.set(1 + routeDrift * .65, 1 + eased * .34, 1);
-        const trailAgeSeconds = Math.max(0, elapsed - routeT * 5.35);
+        stamp.position.x -= Math.sin(stampRoute.yaw) * halfLength * .78;
+        stamp.rotation.z = -stampRoute.yaw;
+        stamp.scale.set(1 + stampRoute.turn * .65, 1 + eased * .34, 1);
+        const trailAgeSeconds = Math.max(0, elapsed - routeT * 6.25);
         stamp.material.opacity = Math.max(0, .84 - trailAgeSeconds * .52);
       });
       waterUniforms.uTime.value = time * (1 + eased * .55);
