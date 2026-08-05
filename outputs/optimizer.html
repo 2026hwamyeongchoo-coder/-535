@@ -22,7 +22,14 @@
   <script>
     let W=12,D=5,holdLayers=2,deckLayers=4;const colors={general:'#df493f',flat:'#df9a35',reefer:'#238bd8',liquid:'#7d55a5',flammable:'#f06437',heavy:'#252a30'};
     const names={general:'일반 화물',flat:'플랫랙',reefer:'냉동 화물',liquid:'액체 화물',flammable:'위험물',heavy:'중량 화물'};
-    const specs=[['general',1,'G-20','20ft',14,1],['general',2,'G-40','40ft',12,2],['general',2,'G-HC','High 40ft',10,2.4],['flat',2,'F-40','40ft Flat Rack',4,2.2],['reefer',2,'R-40','40ft Reefer',4,2.6],['reefer',1,'R-20','20ft Reefer',4,1.4],['liquid',1,'L-20','20ft Tank',4,3],['flammable',1,'X-20','20ft Hazard',4,2.2],['heavy',2,'H-HC','High 40ft Heavy',4,6.5]];
+    const specs=[
+      ['general',1,'G-20','20ft',14,1],['general',2,'G-40','40ft',12,2],['general',2,'G-HC','High Cube 40ft',10,2.4],
+      ['flat',1,'F-20','20ft Flat Rack',0,1.3],['flat',2,'F-40','40ft Flat Rack',4,2.2],['flat',2,'F-HC','High Cube Flat Rack',0,2.6],
+      ['reefer',1,'R-20','20ft Reefer',4,1.4],['reefer',2,'R-40','40ft Reefer',4,2.6],['reefer',2,'R-HC','High Cube Reefer',0,3],
+      ['liquid',1,'L-20','20ft Tank',4,3],['liquid',2,'L-40','40ft Tank',0,5.5],['liquid',2,'L-HC','High Cube Tank',0,6],
+      ['flammable',1,'X-20','20ft Hazard',4,2.2],['flammable',2,'X-40','40ft Hazard',0,4.2],['flammable',2,'X-HC','High Cube Hazard',0,4.6],
+      ['heavy',1,'H-20','20ft Heavy',0,4],['heavy',2,'H-40','40ft Heavy',0,6],['heavy',2,'H-HC','High Cube Heavy',4,6.5]
+    ];
     let cargo=[],board,placements=[],blocked=new Set,cellZones=new Map,activeView='hold-0',running=false;
     const key=(area,x,z,y)=>`${area}:${x}:${z}:${y}`;
     function buildCargo(){cargo=[];for(const [type,size,id,dimension,count,weight] of specs)for(let n=0;n<count;n++)cargo.push({type,size,id,dimension,weight,serial:n+1});document.querySelector('#cargo-total').textContent=cargo.length;renderManifest()}
