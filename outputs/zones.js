@@ -735,38 +735,117 @@ window.addEventListener('load', () => {
     ship.add(guide);
   }
 
-  // Give the world its own motion too.  The ship now rides a small swell while
-  // the water and harbour panorama drift in the opposite direction, so the
-  // vessel is not the only object that appears to move on screen.
-  const waveCanvas = document.createElement('canvas');
-  waveCanvas.width = waveCanvas.height = 512;
-  const waveContext = waveCanvas.getContext('2d');
-  const waveGradient = waveContext.createLinearGradient(0, 0, 512, 512);
-  waveGradient.addColorStop(0, '#053d5a'); waveGradient.addColorStop(1, '#0a7190');
-  waveContext.fillStyle = waveGradient; waveContext.fillRect(0, 0, 512, 512);
-  waveContext.strokeStyle = 'rgba(207,246,255,.22)'; waveContext.lineWidth = 2;
-  for (let row = 18; row < 512; row += 38) {
-    waveContext.beginPath();
-    for (let column = -20; column < 540; column += 20) {
-      const y = row + Math.sin(column * .043 + row) * 5;
-      column < 0 ? waveContext.moveTo(column, y) : waveContext.lineTo(column, y);
-    }
-    waveContext.stroke();
-  }
-  const waveTexture = new T.CanvasTexture(waveCanvas);
-  waveTexture.wrapS = waveTexture.wrapT = T.RepeatWrapping;
-  waveTexture.repeat.set(10, 10);
-  // Keep one continuous ocean surface below the deepest hold floor. The old
-  // rectangular opening exposed the sky background below the hull and looked
-  // like a large white plate from low camera angles.
-  const movingSea = new T.Mesh(
-    new T.PlaneGeometry(180, 180),
-    new T.MeshStandardMaterial({ map: waveTexture, color: 0x176b82, roughness: .56, metalness: .24, side: T.DoubleSide })
-  );
+  // A high-density procedural ocean replaces the former flat striped plane.
+  // Its geometry carries long swells while the fragment shader adds short
+  // ripples, Fresnel sky reflection, sun glitter and restrained crest foam.
+  const waterUniforms = {
+    uTime: { value: 0 },
+    uSunDirection: { value: new T.Vector3(-.35, .72, .58).normalize() },
+    uDeepColor: { value: new T.Color(0x021a31) },
+    uMidColor: { value: new T.Color(0x07577c) },
+    uSkyColor: { value: new T.Color(0x98ccec) }
+  };
+  const waterMaterial = new T.ShaderMaterial({
+    uniforms: waterUniforms,
+    side: T.DoubleSide,
+    transparent: false,
+    extensions: { derivatives: true },
+    vertexShader: `
+      uniform float uTime;
+      varying vec3 vWorldPosition;
+      varying float vCrest;
+      void main() {
+        vec3 p = position;
+        float t = uTime;
+        float w1 = sin(p.x * .105 + p.y * .065 + t * .78) * .34;
+        float w2 = sin(p.x * -.055 + p.y * .14 + t * .51) * .21;
+        float w3 = sin(p.x * .31 - p.y * .22 + t * 1.34) * .075;
+        float w4 = sin(p.x * -.48 - p.y * .36 + t * 1.91) * .035;
+        p.z += w1 + w2 + w3 + w4;
+        vec4 world = modelMatrix * vec4(p, 1.0);
+        vWorldPosition = world.xyz;
+        vCrest = w1 + w2 + w3;
+        gl_Position = projectionMatrix * viewMatrix * world;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform vec3 uSunDirection;
+      uniform vec3 uDeepColor;
+      uniform vec3 uMidColor;
+      uniform vec3 uSkyColor;
+      varying vec3 vWorldPosition;
+      varying float vCrest;
+      float ripples(vec2 p) {
+        float a = sin(p.x * 1.85 + p.y * .92 + uTime * 2.1);
+        float b = sin(p.x * -.73 + p.y * 2.42 - uTime * 1.7);
+        float c = sin(p.x * 3.4 - p.y * 2.75 + uTime * 2.8);
+        return (a + b + c) / 3.0;
+      }
+      void main() {
+        vec3 normal = normalize(cross(dFdx(vWorldPosition), dFdy(vWorldPosition)));
+        if (!gl_FrontFacing) normal = -normal;
+        float fine = ripples(vWorldPosition.xz);
+        normal = normalize(normal + vec3(fine * .035, 0.0, fine * .035));
+        vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+        float fresnel = pow(1.0 - max(dot(normal, viewDirection), 0.0), 3.5);
+        float horizon = pow(1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0))), 1.4);
+        vec3 base = mix(uDeepColor, uMidColor, clamp(.43 + vCrest * .48 + fine * .055, 0.0, 1.0));
+        base = mix(base, uSkyColor, fresnel * .72 + horizon * .12);
+        vec3 halfDirection = normalize(uSunDirection + viewDirection);
+        float sparkle = pow(max(dot(normal, halfDirection), 0.0), 210.0);
+        sparkle *= .42 + .58 * smoothstep(.12, .92, sin(vWorldPosition.x * 5.4 + vWorldPosition.z * 3.1 + uTime * 3.0));
+        float foam = smoothstep(.43, .61, vCrest + fine * .045) * .22;
+        vec3 color = base + vec3(1.0, .94, .78) * sparkle * 1.9 + vec3(.72, .9, .95) * foam;
+        color *= .92 + max(dot(normal, uSunDirection), 0.0) * .18;
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `
+  });
+  // Keep one continuous ocean surface below the deepest hold floor. The broad
+  // mesh reaches the horizon even at the lowest permitted camera angle.
+  const movingSea = new T.Mesh(new T.PlaneGeometry(260, 260, 180, 180), waterMaterial);
   movingSea.rotation.x = -Math.PI / 2;
   movingSea.position.y = Math.min(-3.74, holdFloorY - .65);
   movingSea.receiveShadow = true;
   scene.add(movingSea);
+
+  // High-resolution 360-degree sky: a pale marine horizon, deep zenith and
+  // soft layered clouds. It remains fixed in world space while the camera
+  // orbits, avoiding the old disconnect between a rotating floor and sky.
+  const skyCanvas = document.createElement('canvas');
+  skyCanvas.width = 2048; skyCanvas.height = 1024;
+  const skyContext = skyCanvas.getContext('2d');
+  const skyGradient = skyContext.createLinearGradient(0, 0, 0, 1024);
+  skyGradient.addColorStop(0, '#287db8');
+  skyGradient.addColorStop(.46, '#86c3e9');
+  skyGradient.addColorStop(.69, '#d8ecf6');
+  skyGradient.addColorStop(1, '#eef5f7');
+  skyContext.fillStyle = skyGradient; skyContext.fillRect(0, 0, 2048, 1024);
+  const cloud = (x, y, width, height, alpha) => {
+    const gradient = skyContext.createRadialGradient(x, y, 0, x, y, width * .55);
+    gradient.addColorStop(0, `rgba(255,255,255,${alpha})`);
+    gradient.addColorStop(.52, `rgba(246,251,255,${alpha * .62})`);
+    gradient.addColorStop(1, 'rgba(235,246,252,0)');
+    skyContext.fillStyle = gradient;
+    skyContext.save(); skyContext.translate(x, y); skyContext.scale(1, height / width);
+    skyContext.beginPath(); skyContext.arc(0, 0, width * .55, 0, Math.PI * 2); skyContext.fill(); skyContext.restore();
+  };
+  for (let i = 0; i < 34; i += 1) {
+    const x = (i * 337 + 91) % 2140 - 46;
+    const y = 350 + ((i * 83) % 240);
+    const width = 115 + ((i * 47) % 155);
+    cloud(x, y, width, width * (.32 + (i % 3) * .08), .17 + (i % 4) * .025);
+  }
+  const skyTexture = new T.CanvasTexture(skyCanvas);
+  skyTexture.encoding = T.sRGBEncoding;
+  skyTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const skyDome = new T.Mesh(
+    new T.SphereGeometry(118, 64, 32),
+    new T.MeshBasicMaterial({ map: skyTexture, side: T.BackSide, depthWrite: false, fog: false })
+  );
+  skyDome.position.y = -18;
+  scene.add(skyDome);
 
   if (typeof harborTexture !== 'undefined') {
     harborTexture.wrapS = harborTexture.wrapT = T.RepeatWrapping;
@@ -785,8 +864,7 @@ window.addEventListener('load', () => {
       ship.rotation.x = pitch;
       movingSea.position.x = -Math.sin(time * .19) * .32;
       movingSea.position.z = -Math.cos(time * .16) * .42;
-      waveTexture.offset.x = time * .006;
-      waveTexture.offset.y = time * .004;
+      waterUniforms.uTime.value = time;
       if (typeof harborTexture !== 'undefined') {
         harborTexture.offset.x = .02 + Math.sin(time * .22) * .012 - roll * .35;
         harborTexture.offset.y = .01 + Math.sin(time * .43) * .006 - heave * .035;
