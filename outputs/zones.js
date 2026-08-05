@@ -970,15 +970,17 @@ window.addEventListener('load', () => {
   const departureRoute = (routeProgress, originX, originZ) => {
     const straightEnd = .27;
     const straightRatio = Math.min(1, routeProgress / straightEnd);
-    const straightEase = straightRatio * straightRatio * (3 - 2 * straightRatio);
     const turnRatio = Math.max(0, Math.min(1, (routeProgress - straightEnd) / (1 - straightEnd)));
     const turn = turnRatio * turnRatio * (3 - 2 * turnRatio);
-    const angle = turn * Math.PI * .92;
-    const straightDistance = Math.max(21, D * S * .92);
     const radius = Math.max(27, D * S * 1.22);
+    const turnAngle = Math.PI * .92;
+    // Linear angle preserves tangential speed at the join. The straight
+    // distance is derived from the arc speed so neither segment pauses.
+    const angle = turnRatio * turnAngle;
+    const straightDistance = radius * turnAngle * straightEnd / (1 - straightEnd);
     return {
       x: originX - radius + radius * Math.cos(angle),
-      z: originZ + straightEase * straightDistance + radius * Math.sin(angle),
+      z: originZ + straightRatio * straightDistance + radius * Math.sin(angle),
       yaw: -angle,
       turn,
       ease: routeProgress * routeProgress * (3 - 2 * routeProgress)
