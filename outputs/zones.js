@@ -338,6 +338,44 @@ window.addEventListener('load', () => {
     }
     return originalAllowed(item, x, z, y);
   };
+  // Special cargo may be loaded onto a supported surface, but never used as a
+  // supporting surface itself. Refrigerated boxes additionally need a clear
+  // side for airflow and access, so they cannot be boxed in on every side.
+  const allowedBeforeSafetyRules = allowed;
+  const noStackCargo = new Set(['flat', 'liquid', 'flammable']);
+  const hasReeferClearSide = (item, x, z, y, addedFootprint = null) => {
+    const footprint = new Set(cells(item, x, z).map(([cellX, cellZ]) => `${cellX}:${cellZ}`));
+    for (const [cellX, cellZ] of cells(item, x, z)) {
+      for (const [nearX, nearZ] of [[cellX - 1, cellZ], [cellX + 1, cellZ], [cellX, cellZ - 1], [cellX, cellZ + 1]]) {
+        if (nearX < 0 || nearX >= W || nearZ < 0 || nearZ >= D) return true;
+        if (footprint.has(`${nearX}:${nearZ}`)) continue;
+        if (!addedFootprint?.has(`${nearX}:${nearZ}`) && !board[nearX][nearZ][y]) return true;
+      }
+    }
+    return false;
+  };
+  const wouldSealExistingReefer = (item, x, z, y) => {
+    const addedFootprint = new Set(cells(item, x, z).map(([cellX, cellZ]) => `${cellX}:${cellZ}`));
+    const checked = new Set();
+    for (let cellX = 0; cellX < W; cellX += 1) for (let cellZ = 0; cellZ < D; cellZ += 1) {
+      const existing = board[cellX][cellZ][y];
+      if (!existing || existing.item.t !== 'reefer') continue;
+      const key = `${existing.x}:${existing.z}:${existing.y}`;
+      if (checked.has(key)) continue;
+      checked.add(key);
+      if (!hasReeferClearSide(existing.item, existing.x, existing.z, existing.y, addedFootprint)) return true;
+    }
+    return false;
+  };
+  allowed = function allowedWithSpecialCargoSafety(item, x, z, y) {
+    if (!allowedBeforeSafetyRules(item, x, z, y)) return false;
+    if (y > 0 && cells(item, x, z).some(([cellX, cellZ]) => {
+      const support = board[cellX][cellZ][y - 1];
+      return support && noStackCargo.has(support.item.t);
+    })) return false;
+    if (wouldSealExistingReefer(item, x, z, y)) return false;
+    return item.t !== 'reefer' || hasReeferClearSide(item, x, z, y);
+  };
   update = function updateWithSofterBalance() {
     baseUpdate();
     const offset = cg();
