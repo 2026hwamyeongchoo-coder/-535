@@ -169,13 +169,48 @@ window.addEventListener('load', () => {
   helpStyle.textContent = `
     .stow-help-backdrop{position:fixed;inset:0;z-index:20;display:none;place-items:center;background:#020e17a8;padding:20px}
     .stow-help-backdrop.open{display:grid}.stow-help{position:relative;width:min(640px,94vw);max-height:82vh;overflow:auto;border:2px solid #69b8ce;border-radius:16px;background:#082337;color:#eaf8ff;box-shadow:0 18px 50px #000b;padding:24px}
-    .stow-help h2{margin:0 34px 12px 0;color:#fff;font-size:23px}.stow-help h3{margin:18px 0 7px;color:#83e7d2;font-size:15px}.stow-help p{margin:4px 0;line-height:1.55;font-size:14px}.stow-help strong{color:#ffd55b}.stow-help-close{position:absolute;right:14px;top:12px;width:34px;height:34px;padding:0;border-radius:50%;font-size:24px;line-height:30px;background:#1d607d}
+    .stow-help h2{margin:0 34px 12px 0;color:#fff;font-size:23px}.stow-help h3{margin:18px 0 7px;color:#83e7d2;font-size:15px}.stow-help p,.stow-help li{line-height:1.55;font-size:14px}.stow-help p{margin:4px 0}.stow-help ul{margin:6px 0;padding-left:21px}.stow-help li{margin:5px 0}.stow-help strong{color:#ffd55b}.stow-help kbd{display:inline-block;min-width:28px;padding:2px 6px;border:1px solid #78b6c8;border-bottom-width:3px;border-radius:5px;background:#061824;color:#fff;text-align:center;font:700 12px system-ui}.stow-help .zone-key{display:inline-block;padding:1px 6px;border-radius:4px;color:#fff;font-size:12px;font-weight:900}.stow-help-close{position:absolute;right:14px;top:12px;width:34px;height:34px;padding:0;border-radius:50%;font-size:24px;line-height:30px;background:#1d607d}
   `;
   document.head.append(helpStyle);
   const helpBackdrop = document.createElement('div');
   helpBackdrop.className = 'stow-help-backdrop';
-  helpBackdrop.innerHTML = `<section class="stow-help" role="dialog" aria-modal="true" aria-labelledby="stow-help-title"><button class="stow-help-close" aria-label="도움말 닫기">×</button><h2 id="stow-help-title">적재 도움말</h2><p>왼쪽 목록에서 화물을 선택한 뒤, 열린 선창의 빈 칸을 클릭해 적재합니다. 드래그로 배를 돌리고 휠로 확대·축소합니다. 40ft 화물은 <strong>40피트 회전</strong>으로 방향을 바꿀 수 있습니다.</p><h3>화물별 적재 가능 위치</h3><p><strong>일반 컨테이너</strong> — 모든 선창과 모든 층에 적재 가능</p><p><strong>플랫랙</strong> — 주황색 <strong>FLAT RACK</strong> 전용 구역 또는 맨 위층</p><p><strong>냉동 컨테이너</strong> — 파란색 <strong>REEFER</strong> 전원 구역 또는 맨 위층</p><p><strong>액체 탱크</strong> — 보라색 <strong>TANK SAFE</strong> 안전 구역 또는 선창 하부 1~2층</p><p><strong>가연성 화물</strong> — 다른 화물의 맨 위층에만 적재</p><p><strong>무거운 화물</strong> — 검은색 <strong>HEAVY L1</strong> 구역의 선창 바닥층</p><h3>안전 규칙</h3><p>컨테이너는 아래 화물 전체가 받쳐야 합니다. 좌우 무게중심 게이지가 중앙의 녹색 구간에 머물도록 양쪽에 나누어 적재하세요. 규칙 위반이나 심한 기울기는 게임 오버입니다.</p></section>`;
-  [...helpBackdrop.querySelectorAll('p')].find((paragraph) => paragraph.textContent.startsWith('냉동 컨테이너')).innerHTML = '<strong>냉동 컨테이너</strong> — 선창 내부의 파란색 <strong>REEFER ⚡</strong> 전원 구역 또는 상갑판의 외부 적재 위치';
+  helpBackdrop.innerHTML = `<section class="stow-help" role="dialog" aria-modal="true" aria-labelledby="stow-help-title"><button class="stow-help-close" aria-label="도움말 닫기">×</button><h2 id="stow-help-title">조작 및 적재 규칙</h2>
+    <h3>기본 조작</h3><ul>
+      <li>오른쪽 화물 목록에서 화물을 선택하고 선박의 빈 칸을 클릭하면 적재합니다. 선택한 화물을 다시 누르면 선택이 해제됩니다.</li>
+      <li><strong>마우스 드래그</strong>: 선박 회전 · <strong>휠</strong>: 확대/축소</li>
+      <li><kbd>우클릭</kbd> 또는 <strong>40피트 회전</strong>: 40ft/40HC 화물의 가로·세로 방향 전환</li>
+      <li><strong>적재 위치</strong> 버튼: 선창과 상갑판 전환. 현재 선택한 공간에만 화물이 들어갑니다.</li>
+      <li>설치한 화물 위에 커서를 올리고 <kbd>Backspace</kbd>: 화물을 목록으로 되돌립니다. 위 화물부터 제거해야 합니다.</li>
+      <li><strong>UI 숨김</strong>: 화면 패널을 감춥니다. 숨김 상태에서도 간편 화물 아이콘, 도움말, 초기화, 이전 화면 버튼을 사용할 수 있습니다.</li>
+    </ul>
+    <h3>칸과 쌓기 규칙</h3><ul>
+      <li>20ft는 1칸, 40ft와 40HC는 방향에 따라 연속된 2칸을 차지합니다.</li>
+      <li>2층 이상은 화물이 차지하는 <strong>모든 칸 아래</strong>가 다른 화물로 완전히 지지되어야 합니다. 공중이나 절반만 받친 상태로는 적재할 수 없습니다.</li>
+      <li>선창과 상갑판은 별도의 적재 공간입니다. 기본 상갑판은 최대 4층이며, 수동 시뮬레이션에서는 설정한 층수를 사용합니다.</li>
+      <li>플랫랙·액체·위험물 위에는 다른 화물을 쌓을 수 없습니다.</li>
+      <li>냉동 화물은 사방이 다른 화물로 막히면 안 됩니다. 적어도 한 면은 비어 있어야 합니다.</li>
+      <li>빨간 X의 <strong>적재 금지 칸</strong>에는 어떤 화물도 놓을 수 없습니다.</li>
+    </ul>
+    <h3>특수 구역 표시</h3><ul>
+      <li><span class="zone-key" style="background:#8b6812">FLAT RACK</span> 플랫랙 전용 구역</li>
+      <li><span class="zone-key" style="background:#087aa8">REEFER ⚡</span> 냉동 화물 전원 구역</li>
+      <li><span class="zone-key" style="background:#70408b">TANK SAFE</span> 액체·위험물용 안전구역</li>
+      <li>특수 구역은 AI 설정 화면에서 사용자가 지정한 경우에만 나타납니다.</li>
+    </ul>
+    <h3>화물별 적재 가능 위치</h3><ul>
+      <li><strong>일반 컨테이너(빨간색)</strong>: 선창과 상갑판의 일반 칸. 지지 조건을 만족하면 위층에도 적재 가능</li>
+      <li><strong>플랫랙(주황색)</strong>: 상갑판 또는 FLAT RACK 전용 구역. 플랫랙 위에는 추가 적재 불가</li>
+      <li><strong>냉동 컨테이너(파란색·❄)</strong>: 상갑판 또는 REEFER ⚡ 전원 구역. 최소 한 면 개방 필수</li>
+      <li><strong>액체 탱크(보라색·◉)</strong>: 선창 하부 1~2층 또는 TANK SAFE 구역. 위에 추가 적재 불가</li>
+      <li><strong>위험물(주황색·🔥)</strong>: 상갑판 또는 TANK SAFE 구역. 위에 추가 적재 불가</li>
+      <li><strong>중량 화물(검은색·◆)</strong>: 선창 바닥층의 좌우 중앙부. 높은 층이나 선박 가장자리에는 적재 불가</li>
+    </ul>
+    <h3>무게중심·점수·종료 조건</h3><ul>
+      <li>무거운 화물은 낮고 중앙에 두고, 좌현과 우현에 무게를 나눠 게이지가 녹색 구간에 머물게 하세요.</li>
+      <li>점수는 규칙 적합성, 공간 효율, 하중 분산을 반영합니다.</li>
+      <li>금지 위치 또는 지지되지 않은 위치에 적재하거나 무게중심이 안전 한계를 넘으면 게임 오버와 침몰 효과가 발생합니다.</li>
+      <li>목록의 모든 화물을 규칙에 맞게 적재하면 항차가 완료됩니다.</li>
+    </ul><p><strong>도움말은 자동으로 닫히지 않습니다. 오른쪽 위 × 버튼으로 닫으세요.</strong></p></section>`;
   document.body.append(helpBackdrop);
   const closeHelp = () => helpBackdrop.classList.remove('open');
   helpBackdrop.querySelector('.stow-help-close').onclick = closeHelp;
