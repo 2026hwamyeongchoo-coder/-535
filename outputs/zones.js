@@ -472,6 +472,8 @@ window.addEventListener('load', () => {
     }
     const base = item._stackBase ?? (holdFloorY + y * levelStep);
     group.position.set((x - (W - 1) / 2 + (item.dir === 'x' ? (length - 1) / 2 : 0)) * S, base + height / 2, (z - (D - 1) / 2 + (item.dir === 'z' ? (length - 1) / 2 : 0)) * S);
+    item._mesh = group;
+    group.traverse((part) => { part.userData.cargoItem = item; });
     if (item._onDeck) group.traverse((part) => { part.userData.deckCargo = true; });
     ship.add(group);
     updateDeckTransparency();
@@ -505,8 +507,67 @@ window.addEventListener('load', () => {
       previousCargoMesh(nextItem, nextX, nextZ, nextY);
       cargoMesh = previousCargoMesh;
     };
-    return originalPlace(x, z);
+    const scoreBeforePlacement = score;
+    const result = originalPlace(x, z);
+    const root = y >= 0 ? board[x][z][y] : null;
+    if (root?.item === item) root.gain = Math.max(0, score - scoreBeforePlacement);
+    return result;
   };
+
+  // Hover a real 3D container and press Backspace to return it to inventory.
+  // A supporting container cannot be removed until every container above it
+  // has been returned, which keeps the stack physically valid.
+  let hoveredCargo = null;
+  const setHoveredCargo = (item) => {
+    if (hoveredCargo === item) return;
+    const previousBody = hoveredCargo?._mesh?.children?.find((part) => part.isMesh);
+    if (previousBody?.material?.emissive) previousBody.material.emissive.setHex(0x000000);
+    hoveredCargo = item;
+    const nextBody = hoveredCargo?._mesh?.children?.find((part) => part.isMesh);
+    if (nextBody?.material?.emissive) nextBody.material.emissive.setHex(0x168fb0);
+    cv.style.cursor = hoveredCargo ? 'pointer' : '';
+  };
+  cv.addEventListener('pointermove', (event) => {
+    if (drag || ended) return setHoveredCargo(null);
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = (event.clientX - rect.left) / rect.width * 2 - 1;
+    pointer.y = -(event.clientY - rect.top) / rect.height * 2 + 1;
+    ray.setFromCamera(pointer, camera);
+    const cargoHit = ray.intersectObjects(ship.children, true).find((hit) => hit.object.userData.cargoItem);
+    setHoveredCargo(cargoHit?.object.userData.cargoItem || null);
+  });
+  cv.addEventListener('pointerleave', () => setHoveredCargo(null));
+  window.addEventListener('keydown', (event) => {
+    if (event.key !== 'Backspace' || !hoveredCargo || ended) return;
+    event.preventDefault();
+    let root = null;
+    for (let cellX = 0; cellX < W && !root; cellX += 1) for (let cellZ = 0; cellZ < D && !root; cellZ += 1) for (let level = 0; level < H; level += 1) {
+      const candidate = board[cellX][cellZ][level];
+      if (candidate?.item === hoveredCargo) { root = candidate; break; }
+    }
+    if (!root) return setHoveredCargo(null);
+    const footprint = cells(root.item, root.x, root.z);
+    if (root.y + 1 < H && footprint.some(([cellX, cellZ]) => board[cellX][cellZ][root.y + 1])) {
+      toast('위에 쌓인 화물을 먼저 되돌리세요.');
+      return;
+    }
+    footprint.forEach(([cellX, cellZ]) => { if (board[cellX][cellZ][root.y] === root) board[cellX][cellZ][root.y] = null; });
+    ship.remove(root.item._mesh);
+    root.item._mesh?.traverse((part) => {
+      part.geometry?.dispose?.();
+      if (Array.isArray(part.material)) part.material.forEach((material) => material.dispose?.());
+      else part.material?.dispose?.();
+    });
+    root.item.used = false;
+    delete root.item._mesh;
+    delete root.item._stackBase;
+    delete root.item._onDeck;
+    score = Math.max(0, score - (root.gain || 0));
+    setHoveredCargo(null);
+    update();
+    updateDeckTransparency();
+    toast(`${root.item.id} 화물을 되돌렸습니다.`);
+  });
 
   ship.traverse((object) => {
     if (object.isLine) object.visible = false;
